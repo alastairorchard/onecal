@@ -1,10 +1,11 @@
-/* OneCal Modern Dark Mode & Preparation Heatmap Styles */
+/* OneCal Modern Dark Mode & Ultra-Clean Sans-Serif Typography */
 
 :root {
   color-scheme: dark;
 }
 
 body {
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   background-color: #090b10;
 }
@@ -103,7 +104,7 @@ body {
   background: rgba(147, 51, 234, 0.06);
 }
 
-/* OpenStreetMap Leaflet Dark Mode Tiles */
+/* OpenStreetMap Leaflet Container */
 .leaflet-container {
   background: #090b10 !important;
   font-family: inherit !important;
@@ -143,8 +144,9 @@ body {
   body {
     background: #ffffff !important;
     color: #0f172a !important;
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
   }
-  header, nav, button, #toast, #drawer-filter-panel, #drawer-filter-backdrop, .no-print {
+  header, nav, button, #toast, #drawer-filter-panel, #drawer-filter-backdrop, #app-login-gate, .no-print {
     display: none !important;
   }
   .diary-page-entry {
