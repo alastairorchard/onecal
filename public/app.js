@@ -651,6 +651,12 @@ function goToToday() {
   renderCalendar();
 }
 
+function openDayView(dateStr) {
+  if (!dateStr) return;
+  state.currentDate = new Date(dateStr);
+  setCalendarMode('day');
+}
+
 function renderCalendar() {
   const labelEl = document.getElementById('calendar-period-label');
   const container = document.getElementById('calendar-grid-container');
@@ -720,10 +726,10 @@ function renderMonthCalendar(container, year, month, events) {
       }
     });
 
-    html += `<div class="cal-day-cell p-2 rounded-xl flex flex-col justify-between cursor-pointer ${isToday ? 'cal-day-today' : ''}">
+    html += `<div onclick="openDayView('${thisDate.toISOString()}')" class="cal-day-cell p-2 rounded-xl flex flex-col justify-between cursor-pointer ${isToday ? 'cal-day-today' : ''}">
       <div class="flex items-center justify-between mb-1">
-        <span class="text-xs font-black ${isToday ? 'text-purple-400' : 'text-slate-300'}">${day}</span>
-        ${dayPills.length > 0 ? `<span class="text-[9px] font-black px-1.5 py-0.2 rounded-full bg-slate-800 text-slate-400">${dayPills.length}</span>` : ''}
+        <span class="text-xs font-black ${isToday ? 'text-[#00ffb9]' : 'text-slate-300'}">${day}</span>
+        ${dayPills.length > 0 ? `<span class="text-[9px] font-black px-1.5 py-0.2 rounded-full bg-[#070c1b] text-teal-300 border border-[#172447]">${dayPills.length}</span>` : ''}
       </div>
 
       <div class="space-y-1.5 overflow-hidden flex-1">
@@ -770,8 +776,8 @@ function renderWeekCalendar(container, currDate, events) {
       }
     });
 
-    html += `<div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-3 flex flex-col space-y-2">
-      <div class="border-b border-slate-800 pb-2 text-center">
+    html += `<div onclick="openDayView('${day.toISOString()}')" class="bg-[#091024] border border-[#172447] hover:border-[#00ffb9]/40 rounded-2xl p-3 flex flex-col space-y-2 cursor-pointer transition">
+      <div class="border-b border-[#172447] pb-2 text-center">
         <div class="text-xs text-slate-400 font-bold uppercase tracking-wider">${day.toLocaleDateString('en-US', { weekday: 'short' })}</div>
         <div class="text-xl font-black text-white">${day.getDate()}</div>
       </div>
@@ -1051,11 +1057,11 @@ function initOrRefreshMap() {
   filteredEvents.forEach(evt => {
     const marker = L.circleMarker([evt.lat, evt.lng], {
       radius: 9,
-      fillColor: '#8b5cf6',
-      color: '#ffffff',
+      fillColor: '#00ffb9',
+      color: '#000028',
       weight: 2,
       opacity: 1,
-      fillOpacity: 0.9
+      fillOpacity: 0.95
     }).addTo(state.map);
 
     const popupHtml = `
@@ -1170,8 +1176,8 @@ function renderKPIs() {
         labels: Object.keys(verticalCounts),
         datasets: [{
           data: Object.values(verticalCounts),
-          backgroundColor: ['#8b5cf6', '#ec4899', '#3b82f6', '#10b981', '#f59e0b', '#06b6d4', '#64748b'],
-          borderColor: '#111622',
+          backgroundColor: ['#00646e', '#00ffb9', '#00a3a6', '#0284c7', '#f59e0b', '#10b981', '#64748b'],
+          borderColor: '#0c1429',
           borderWidth: 3
         }]
       },
@@ -1201,7 +1207,7 @@ function renderKPIs() {
         datasets: [{
           label: 'Events Count',
           data: Object.values(regionCounts),
-          backgroundColor: '#6366f1',
+          backgroundColor: '#00a3a6',
           borderRadius: 8
         }]
       },

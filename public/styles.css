@@ -1,13 +1,21 @@
-/* OneCal Modern Dark Mode & Ultra-Clean Sans-Serif Typography */
+/* OneCal — Siemens Modern Industrial Brand Theme & Preparation Heatmap */
 
 :root {
   color-scheme: dark;
+  --siemens-petrol: #00646e;
+  --siemens-mint: #00ffb9;
+  --siemens-cyan: #00a3a6;
+  --siemens-navy: #000028;
+  --siemens-dark-bg: #050814;
+  --siemens-card: #0c1429;
+  --siemens-border: rgba(0, 163, 166, 0.2);
 }
 
 body {
   font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
-  background-color: #090b10;
+  background-color: #050814;
+  color: #f1f5f9;
 }
 
 /* Custom Scrollbars */
@@ -16,45 +24,45 @@ body {
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #0c1017;
+  background: #050814;
 }
 ::-webkit-scrollbar-thumb {
-  background: #1e293b;
+  background: #152244;
   border-radius: 999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #334155;
+  background: #00646e;
 }
 
-/* Filter Chips */
+/* Filter Chips with Siemens Petrol & Mint */
 .filter-chip {
   padding: 5px 12px;
   border-radius: 999px;
   font-size: 11px;
   font-weight: 700;
-  background: #161c2c;
-  border: 1px solid #1e293b;
+  background: #0d1733;
+  border: 1px solid #1c2b55;
   color: #94a3b8;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 .filter-chip:hover {
-  background: #1e293b;
+  background: #14234d;
   color: #ffffff;
-  border-color: #334155;
+  border-color: #00a3a6;
 }
 .filter-chip.chip-active {
-  background: #7c3aed !important;
+  background: linear-gradient(135deg, #00646e 0%, #00a3a6 100%) !important;
   color: #ffffff !important;
-  border-color: #9333ea !important;
-  box-shadow: 0 2px 10px rgba(124, 58, 237, 0.35);
+  border-color: #00ffb9 !important;
+  box-shadow: 0 2px 12px rgba(0, 255, 185, 0.25);
 }
 
 /* Preparation Intensity Classes */
 .prep-intensity-1 {
-  background: rgba(59, 130, 246, 0.15) !important;
-  border-left: 3px solid #3b82f6 !important;
-  color: #93c5fd !important;
+  background: rgba(0, 163, 166, 0.16) !important;
+  border-left: 3px solid #00a3a6 !important;
+  color: #7ee7e8 !important;
 }
 .prep-intensity-2 {
   background: rgba(245, 158, 11, 0.18) !important;
@@ -73,10 +81,10 @@ body {
   animation: pulseCrunch 2.5s infinite;
 }
 .prep-intensity-event {
-  background: rgba(147, 51, 234, 0.35) !important;
-  border-left: 3px solid #a855f7 !important;
-  color: #f3e8ff !important;
-  box-shadow: 0 4px 14px rgba(147, 51, 234, 0.25);
+  background: linear-gradient(135deg, rgba(0, 100, 110, 0.85) 0%, rgba(0, 163, 166, 0.85) 100%) !important;
+  border-left: 3px solid #00ffb9 !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(0, 255, 185, 0.2);
 }
 
 @keyframes pulseCrunch {
@@ -86,43 +94,45 @@ body {
 
 /* Calendar Grid Styling */
 .cal-day-cell {
-  min-height: 110px;
-  background: #0f141f;
-  border: 1px solid rgba(148, 163, 184, 0.08);
+  min-height: 115px;
+  background: #091024;
+  border: 1px solid rgba(28, 43, 85, 0.8);
   transition: all 0.15s ease;
 }
 .cal-day-cell:hover {
-  background: #141b2a;
-  border-color: rgba(139, 92, 246, 0.3);
+  background: #0f1c3d;
+  border-color: rgba(0, 255, 185, 0.4);
+  transform: translateY(-1px);
 }
 .cal-day-other-month {
-  opacity: 0.35;
-  background: #090b10;
+  opacity: 0.3;
+  background: #040712;
 }
 .cal-day-today {
-  border-color: rgba(168, 85, 247, 0.6) !important;
-  background: rgba(147, 51, 234, 0.06);
+  border-color: #00ffb9 !important;
+  background: rgba(0, 163, 166, 0.08) !important;
+  box-shadow: inset 0 0 15px rgba(0, 255, 185, 0.06);
 }
 
-/* OpenStreetMap Leaflet Container */
+/* OpenStreetMap Leaflet Container with Siemens Dark Blue styling */
 .leaflet-container {
-  background: #090b10 !important;
+  background: #050814 !important;
   font-family: inherit !important;
 }
 .osm-dark-tiles {
-  filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7);
+  filter: brightness(0.6) invert(1) contrast(3) hue-rotate(185deg) saturate(0.35) brightness(0.7);
 }
 .leaflet-popup-content-wrapper {
-  background: #111622 !important;
-  border: 1px solid #334155 !important;
+  background: #0c1429 !important;
+  border: 1px solid #00a3a6 !important;
   border-radius: 16px !important;
   color: #f8fafc !important;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6) !important;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7) !important;
   padding: 4px !important;
 }
 .leaflet-popup-tip {
-  background: #111622 !important;
-  border: 1px solid #334155 !important;
+  background: #0c1429 !important;
+  border: 1px solid #00a3a6 !important;
 }
 
 /* Animations */
@@ -143,7 +153,7 @@ body {
   }
   body {
     background: #ffffff !important;
-    color: #0f172a !important;
+    color: #000028 !important;
     font-family: 'Plus Jakarta Sans', sans-serif !important;
   }
   header, nav, button, #toast, #drawer-filter-panel, #drawer-filter-backdrop, #app-login-gate, .no-print {
