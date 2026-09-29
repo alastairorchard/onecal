@@ -50,7 +50,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <!-- Custom Styles -->
-  <link rel="stylesheet" href="./styles.css?v=600">
+  <link rel="stylesheet" href="./styles.css?v=700">
 </head>
 <body class="bg-[#050814] text-slate-100 min-h-screen flex flex-col font-sans selection:bg-[#00ffb9]/30 overflow-x-hidden">
 
@@ -94,7 +94,7 @@
 
         <div class="space-y-1.5">
           <label class="block text-slate-300 font-bold">Password *</label>
-          <input type="***" id="gate-input-***" required minlength="6" placeholder="••••••••" class="w-full bg-[#070c1b] border border-[#172447] rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-[#00ffb9] text-xs">
+          <input type="password" id="gate-input-pass" required minlength="6" placeholder="••••••••" class="w-full bg-[#070c1b] border border-[#172447] rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-[#00ffb9] text-xs">
         </div>
 
         <button type="submit" id="gate-btn-submit" class="w-full py-3 bg-gradient-to-r from-[#00646e] to-[#00a3a6] hover:from-[#007682] hover:to-[#00b5b8] text-white font-black rounded-xl transition shadow-lg shadow-[#00646e]/30 text-xs tracking-wide uppercase">
@@ -600,7 +600,7 @@
       <!-- Change Password -->
       <div class="space-y-2 pt-2 border-t border-[#172447]">
         <label class="block text-slate-300 font-bold">Change Password</label>
-        <input type="***" id="input-change-***" placeholder="New *** (min 6 chars)" class="w-full bg-[#070c1b] border border-[#172447] rounded-xl px-3 py-2 text-white">
+        <input type="password" id="input-change-pass" placeholder="New *** (min 6 chars)" class="w-full bg-[#070c1b] border border-[#172447] rounded-xl px-3 py-2 text-white">
         <button onclick="handleUpdatePassword()" class="w-full py-2 bg-[#00646e] hover:bg-[#007682] text-white font-bold rounded-xl transition">
           Update Password
         </button>
@@ -881,7 +881,7 @@
         <label class="font-bold text-slate-300 uppercase tracking-wider text-[11px]">⚡ Supabase Cloud Sync</label>
         <p class="text-slate-400 text-[11px]">Connect to Supabase for multi-user real-time team calendar synchronization.</p>
         <input type="text" id="cfg-supabase-url" placeholder="https://xyz.supabase.co" class="w-full bg-[#070c1b] border border-[#172447] rounded-xl px-3 py-2 text-white">
-        <input type="***" id="cfg-supabase-key" placeholder="Supabase Anon / Publishable Key" class="w-full bg-[#070c1b] border border-[#172447] rounded-xl px-3 py-2 text-white">
+        <input type="password" id="cfg-supabase-key" placeholder="Supabase Anon / Publishable Key" class="w-full bg-[#070c1b] border border-[#172447] rounded-xl px-3 py-2 text-white">
         <button onclick="saveSupabaseConfig()" class="w-full py-2 bg-[#00646e] hover:bg-[#007682] text-white font-bold rounded-xl transition">
           Connect Cloud Sync
         </button>
@@ -932,7 +932,7 @@
   </div>
 
   <!-- Scripts -->
-  <script src="./sample-data.js?v=600"></script>
-  <script src="./app.js?v=600"></script>
+  <script src="./sample-data.js?v=700"></script>
+  <script src="./app.js?v=700"></script>
 </body>
 </html>

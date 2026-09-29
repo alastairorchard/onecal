@@ -139,12 +139,23 @@ function setGateAuthMode(mode) {
 }
 
 async function handleGateAuthSubmit(e) {
-  e.preventDefault();
-  const email = document.getElementById('gate-input-email').value.trim();
-  const userPass = document.getElementById('gate-input-password').value;
-  const name = document.getElementById('gate-input-name').value.trim() || email.split('@')[0];
+  if (e && e.preventDefault) e.preventDefault();
+  const emailEl = document.getElementById('gate-input-email');
+  const passEl = document.getElementById('gate-input-pass') || document.getElementById('gate-input-password');
+  const nameEl = document.getElementById('gate-input-name');
 
-  if (!email || !userPass) return;
+  const email = emailEl ? emailEl.value.trim() : '';
+  const userPass = passEl ? passEl.value : '';
+  const name = (nameEl && nameEl.value.trim()) ? nameEl.value.trim() : (email ? email.split('@')[0] : 'User');
+
+  if (!email) {
+    showToast('Please enter your email address.', 'error');
+    return;
+  }
+  if (!userPass || userPass.length < 6) {
+    showToast('Password must be at least 6 characters.', 'error');
+    return;
+  }
 
   showToast('Authenticating...', 'info');
 
