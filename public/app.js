@@ -822,19 +822,35 @@ function renderYearCalendar(container, year, events) {
 // ==========================================
 // PREPARATION RADAR VIEW
 // ==========================================
+function handleRadarDateChange(val) {
+  if (!val) return;
+  state.currentDate = new Date(val + 'T12:00:00');
+  renderPrepRadar();
+}
+
+function resetRadarToToday() {
+  state.currentDate = new Date();
+  renderPrepRadar();
+}
+
 function renderPrepRadar() {
   const listEl = document.getElementById('radar-cards-list');
-  const dateEl = document.getElementById('radar-today-date');
+  const dateInput = document.getElementById('radar-date-input');
   if (!listEl) return;
 
-  const today = state.currentDate;
-  if (dateEl) dateEl.textContent = `Target Date: ${today.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+  const targetDay = state.currentDate || new Date();
+  if (dateInput) {
+    const yyyy = targetDay.getFullYear();
+    const mm = String(targetDay.getMonth() + 1).padStart(2, '0');
+    const dd = String(targetDay.getDate()).padStart(2, '0');
+    dateInput.value = `${yyyy}-${mm}-${dd}`;
+  }
 
   const filteredEvents = getFilteredEvents();
   const radarItems = [];
 
   filteredEvents.forEach(evt => {
-    const heat = getPrepIntensityForDate(today, evt);
+    const heat = getPrepIntensityForDate(targetDay, evt);
     if (heat.active) {
       radarItems.push({ event: evt, heat });
     }
@@ -844,7 +860,7 @@ function renderPrepRadar() {
 
   if (radarItems.length === 0) {
     listEl.innerHTML = `<div class="col-span-full text-center py-16 bg-slate-900/50 rounded-2xl border border-slate-800 text-slate-500 font-semibold">
-      ⚡ All clear! No events in active preparation for ${today.toLocaleDateString()}.
+      ⚡ All clear! No events in active preparation for ${targetDay.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}.
     </div>`;
     return;
   }

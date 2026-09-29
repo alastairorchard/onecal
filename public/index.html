@@ -46,7 +46,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <!-- Custom Styles -->
-  <link rel="stylesheet" href="./styles.css?v=400">
+  <link rel="stylesheet" href="./styles.css?v=450">
 </head>
 <body class="bg-[#090b10] text-slate-100 min-h-screen flex flex-col font-sans selection:bg-purple-500/30 overflow-x-hidden">
 
@@ -402,10 +402,14 @@
               <h2 class="text-2xl font-black text-white flex items-center gap-2">
                 ⚡ Team Preparation Radar
               </h2>
-              <p class="text-xs text-slate-400 mt-1">Real-time breakdown of events requiring active preparation today and this week with priority gradient.</p>
+              <p class="text-xs text-slate-400 mt-1">Real-time breakdown of events requiring active preparation on this date, ranked by urgency.</p>
             </div>
-            <div id="radar-today-date" class="px-4 py-1.5 bg-slate-900 border border-slate-800 rounded-xl text-xs font-bold text-purple-300">
-              Today: Sep 29, 2026
+            <div class="flex items-center gap-2 bg-slate-900/90 border border-slate-800 p-1.5 rounded-2xl">
+              <span class="text-[11px] text-slate-400 font-bold ml-1.5">Preparation Date:</span>
+              <input type="date" id="radar-date-input" onchange="handleRadarDateChange(this.value)" class="bg-slate-800 border border-slate-700 rounded-xl px-2.5 py-1 text-xs text-purple-300 font-bold focus:outline-none focus:border-purple-500 cursor-pointer">
+              <button onclick="resetRadarToToday()" class="px-2.5 py-1 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-[11px] font-bold transition">
+                Today
+              </button>
             </div>
           </div>
 
@@ -875,7 +879,7 @@
   </div>
 
   <!-- Scripts -->
-  <script src="./sample-data.js?v=400"></script>
-  <script src="./app.js?v=400"></script>
+  <script src="./sample-data.js?v=450"></script>
+  <script src="./app.js?v=450"></script>
 </body>
 </html>
