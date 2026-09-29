@@ -47,7 +47,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <!-- Custom Styles -->
-  <link rel="stylesheet" href="./styles.css?v=200">
+  <link rel="stylesheet" href="./styles.css?v=250">
 </head>
 <body class="bg-[#090b10] text-slate-100 min-h-screen flex flex-col font-sans selection:bg-purple-500/30 overflow-x-hidden">
 
@@ -88,7 +88,7 @@
         </button>
       </nav>
 
-      <!-- Action Buttons & Slide-over Filter Trigger -->
+      <!-- Action Buttons & User Profile -->
       <div class="flex items-center gap-2.5">
         
         <!-- Animated Filter Panel Trigger -->
@@ -106,10 +106,12 @@
           ⚙️
         </button>
 
-        <!-- User Profile Pill -->
-        <div id="user-profile-btn" class="hidden sm:flex items-center gap-2 px-2.5 py-1 rounded-xl bg-slate-900/90 border border-slate-800 text-xs text-slate-300">
-          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-          <span id="user-display-name" class="font-semibold text-slate-200">Alastair</span>
+        <!-- User Profile Pill / Login Button -->
+        <div id="user-header-container" class="relative">
+          <button onclick="openAuthModal()" id="btn-user-auth" class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900/90 border border-slate-800 text-xs text-slate-300 hover:border-purple-500/50 transition">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span id="user-display-name" class="font-semibold text-slate-200">Sign In</span>
+          </button>
         </div>
 
       </div>
@@ -333,7 +335,7 @@
       </div>
     </section>
 
-    <!-- VIEW 2: PREPARATION RADAR (Today & Upcoming Crunch) -->
+    <!-- VIEW 2: PREPARATION RADAR -->
     <section id="view-radar" class="space-y-6 hidden">
       <div class="bg-[#111622] border border-slate-800/80 p-6 rounded-2xl shadow-xl">
         <div class="flex items-center justify-between flex-wrap gap-4 border-b border-slate-800 pb-4 mb-6">
@@ -466,6 +468,82 @@
 
   </main>
 
+  <!-- MODAL: AUTHENTICATION & MULTI-USER LOGIN / REGISTER -->
+  <div id="modal-auth" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden items-center justify-center p-4">
+    <div class="bg-[#111622] border border-slate-700 w-full max-w-md rounded-2xl p-6 shadow-2xl space-y-5 animate-fade-in text-xs">
+      
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div class="flex items-center gap-2">
+          <div class="w-7 h-7 rounded-lg bg-gradient-to-tr from-purple-600 to-indigo-500 flex items-center justify-center text-white font-bold">1</div>
+          <h2 id="auth-modal-title" class="font-serif text-lg font-bold text-white">Sign In to OneCal</h2>
+        </div>
+        <button onclick="closeAuthModal()" class="text-slate-400 hover:text-white font-bold text-base">✕</button>
+      </div>
+
+      <!-- Logged In User View (Account Details) -->
+      <div id="auth-view-profile" class="space-y-4 hidden">
+        <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 space-y-2">
+          <div class="text-[11px] text-slate-400 font-bold uppercase">Logged in as:</div>
+          <div id="profile-email-text" class="text-sm font-bold text-white">user@example.com</div>
+          <div id="profile-user-id" class="text-[10px] text-slate-500 font-mono">ID: ...</div>
+        </div>
+
+        <!-- Change Password Section -->
+        <div class="space-y-2 pt-2 border-t border-slate-800">
+          <label class="block text-slate-300 font-bold">Change Password</label>
+          <input type="password" id="input-change-password" placeholder="New password (min 6 chars)" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white">
+          <button onclick="handleUpdatePassword()" class="w-full py-2 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-xl transition">
+            Update Password
+          </button>
+        </div>
+
+        <button onclick="handleSignOut()" class="w-full py-2.5 bg-slate-800 hover:bg-rose-900/60 border border-slate-700 hover:border-rose-500 text-slate-200 hover:text-rose-200 font-bold rounded-xl transition">
+          Sign Out
+        </button>
+      </div>
+
+      <!-- Logged Out View (Login / Register Form) -->
+      <form id="auth-form" onsubmit="handleAuthSubmit(event)" class="space-y-4">
+        
+        <!-- Auth Tabs (Sign In vs Create Account) -->
+        <div class="flex rounded-xl bg-slate-900 border border-slate-800 p-1 gap-1">
+          <button type="button" onclick="setAuthTab('login')" id="btn-auth-tab-login" class="flex-1 py-1.5 rounded-lg text-xs font-bold bg-purple-600 text-white transition">
+            Sign In
+          </button>
+          <button type="button" onclick="setAuthTab('register')" id="btn-auth-tab-register" class="flex-1 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition">
+            Create Account
+          </button>
+        </div>
+
+        <div id="auth-field-name" class="space-y-1 hidden">
+          <label class="block text-slate-300 font-bold">Your Name</label>
+          <input type="text" id="auth-input-name" placeholder="e.g. Alastair Orchard" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-purple-500">
+        </div>
+
+        <div class="space-y-1">
+          <label class="block text-slate-300 font-bold">Email Address *</label>
+          <input type="email" id="auth-input-email" required placeholder="name@company.com" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-purple-500">
+        </div>
+
+        <div class="space-y-1">
+          <label class="block text-slate-300 font-bold">Password *</label>
+          <input type="password" id="auth-input-password" required minlength="6" placeholder="••••••••" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-purple-500">
+        </div>
+
+        <button type="submit" id="btn-auth-submit" class="w-full py-2.5 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-xl transition shadow-lg shadow-purple-600/30">
+          Sign In
+        </button>
+
+        <p class="text-[11px] text-slate-500 text-center">
+          Instant multi-device access with no email verification delay.
+        </p>
+
+      </form>
+
+    </div>
+  </div>
+
   <!-- MODAL: EVENT DETAILS / EDIT / COMMENTS / VOICE NOTES -->
   <div id="modal-event" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden items-center justify-center p-4">
     <div class="bg-[#111622] border border-slate-700 w-full max-w-2xl rounded-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-fade-in">
@@ -494,6 +572,8 @@
             <span id="modal-event-location">📍 Location</span>
             <span>•</span>
             <span id="modal-event-vertical" class="px-2 py-0.5 rounded bg-slate-800 text-indigo-300 font-bold">Vertical</span>
+            <span>•</span>
+            <span id="modal-event-author" class="text-slate-400">Created by: ...</span>
           </div>
         </div>
 
@@ -657,8 +737,8 @@
           <div>
             <label class="block text-slate-300 font-bold mb-1">Privacy</label>
             <select id="form-evt-privacy" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-purple-500">
-              <option value="shared">Shared</option>
-              <option value="private">Private</option>
+              <option value="shared">Shared (Team)</option>
+              <option value="private">Private (Confidential)</option>
             </select>
           </div>
         </div>
@@ -760,7 +840,7 @@
   </div>
 
   <!-- Scripts -->
-  <script src="./sample-data.js?v=200"></script>
-  <script src="./app.js?v=200"></script>
+  <script src="./sample-data.js?v=250"></script>
+  <script src="./app.js?v=250"></script>
 </body>
 </html>

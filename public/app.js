@@ -1,7 +1,7 @@
-// OneCal - Core Application Logic & Preparation Heatmap Engine
+// OneCal - Core Application Logic, Multi-User Auth & Preparation Heatmap Engine
 
 // ==========================================
-// STATE MANAGEMENT & MULTI-DIMENSIONAL FILTERS
+// STATE MANAGEMENT
 // ==========================================
 const state = {
   events: [],
@@ -14,11 +14,12 @@ const state = {
     type: 'ALL',
     privacy: 'ALL'
   },
+  authMode: 'login', // 'login' | 'register'
   activeTab: 'calendar',
   calendarMode: 'month',
   currentDate: new Date(2026, 8, 29), // Sep 29, 2026 (FY26 active horizon)
   activeEventId: null,
-  currentUser: { id: 'demo-user-1', email: 'alastair@orchard.it', username: 'Alastair Orchard' },
+  currentUser: null, // Populated on login/session check
   supabase: null,
   map: null,
   markers: [],
@@ -35,7 +36,7 @@ const state = {
 document.addEventListener('DOMContentLoaded', async () => {
   loadLocalOrSampleData();
   initSupabaseIfConfigured();
-  updateUserDisplay();
+  await checkAuthSession();
   updateFilterUIState();
   renderAllViews();
 });
@@ -58,10 +59,248 @@ function saveLocalData() {
   localStorage.setItem('onecal_events_data_v2', JSON.stringify(state.events));
 }
 
+// ==========================================
+// MULTI-USER AUTHENTICATION (NO EMAIL VERIFICATION DELAY)
+// ==========================================
+async function checkAuthSession() {
+  // Check local saved session first
+  const localUser = localStorage.getItem('onecal_user_session');
+  if (localUser) {
+    try {
+      state.currentUser = JSON.parse(localUser);
+    } catch (e) {}
+  }
+
+  // Check Supabase session
+  if (state.supabase) {
+    try {
+      const { data: { session }, error } = await state.supabase.auth.getSession();
+      if (!error && session && session.user) {
+        state.currentUser = {
+          id: session.user.id,
+          email: session.user.email,
+          username: session.user.user_metadata?.username || session.user.email.split('@')[0]
+        };
+        localStorage.setItem('onecal_user_session', JSON.stringify(state.currentUser));
+      }
+    } catch (err) {
+      console.warn('Session check error:', err);
+    }
+  }
+
+  // Fallback default for demo if no session
+  if (!state.currentUser) {
+    state.currentUser = {
+      id: 'demo-user-1',
+      email: 'alastair@orchard.it',
+      username: 'Alastair Orchard'
+    };
+  }
+
+  updateUserDisplay();
+}
+
 function updateUserDisplay() {
-  const el = document.getElementById('user-display-name');
-  if (el) {
-    el.textContent = state.currentUser ? (state.currentUser.username || state.currentUser.email) : 'Guest';
+  const nameEl = document.getElementById('user-display-name');
+  if (nameEl) {
+    if (state.currentUser) {
+      nameEl.textContent = state.currentUser.username || state.currentUser.email.split('@')[0];
+    } else {
+      nameEl.textContent = 'Sign In';
+    }
+  }
+}
+
+function openAuthModal() {
+  const modal = document.getElementById('modal-auth');
+  const profileView = document.getElementById('auth-view-profile');
+  const authForm = document.getElementById('auth-form');
+  const titleEl = document.getElementById('auth-modal-title');
+
+  if (!modal) return;
+
+  if (state.currentUser && state.currentUser.id !== 'demo-user-1') {
+    // Show logged-in profile
+    if (profileView) profileView.classList.remove('hidden');
+    if (authForm) authForm.classList.add('hidden');
+    if (titleEl) titleEl.textContent = 'User Profile & Account';
+
+    document.getElementById('profile-email-text').textContent = state.currentUser.email;
+    document.getElementById('profile-user-id').textContent = `User ID: ${state.currentUser.id}`;
+  } else {
+    // Show login/register form
+    if (profileView) profileView.classList.add('hidden');
+    if (authForm) authForm.classList.remove('hidden');
+    if (titleEl) titleEl.textContent = state.authMode === 'login' ? 'Sign In to OneCal' : 'Create OneCal Account';
+  }
+
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+}
+
+function closeAuthModal() {
+  const modal = document.getElementById('modal-auth');
+  if (modal) {
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }
+}
+
+function setAuthTab(mode) {
+  state.authMode = mode;
+  const loginBtn = document.getElementById('btn-auth-tab-login');
+  const regBtn = document.getElementById('btn-auth-tab-register');
+  const nameField = document.getElementById('auth-field-name');
+  const submitBtn = document.getElementById('btn-auth-submit');
+  const titleEl = document.getElementById('auth-modal-title');
+
+  if (mode === 'login') {
+    loginBtn.className = 'flex-1 py-1.5 rounded-lg text-xs font-bold bg-purple-600 text-white transition';
+    regBtn.className = 'flex-1 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition';
+    nameField.classList.add('hidden');
+    submitBtn.textContent = 'Sign In';
+    if (titleEl) titleEl.textContent = 'Sign In to OneCal';
+  } else {
+    regBtn.className = 'flex-1 py-1.5 rounded-lg text-xs font-bold bg-purple-600 text-white transition';
+    loginBtn.className = 'flex-1 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition';
+    nameField.classList.remove('hidden');
+    submitBtn.textContent = 'Create Account & Sign In';
+    if (titleEl) titleEl.textContent = 'Create OneCal Account';
+  }
+}
+
+async function handleAuthSubmit(e) {
+  e.preventDefault();
+  const email = document.getElementById('auth-input-email').value.trim();
+  const password = document.getElementById('auth-input-password').value;
+  const name = document.getElementById('auth-input-name').value.trim() || email.split('@')[0];
+
+  if (!email || !password) return;
+
+  showToast('Authenticating...', 'info');
+
+  if (state.supabase) {
+    if (state.authMode === 'register') {
+      try {
+        const { data: signUpData, error: signUpErr } = await state.supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: { username: name }
+          }
+        });
+
+        if (signUpErr) {
+          // If already registered, attempt direct sign in
+          if (signUpErr.message.toLowerCase().includes('already registered')) {
+            const { data: logData, error: logErr } = await state.supabase.auth.signInWithPassword({ email, password });
+            if (logErr) {
+              showToast(logErr.message, 'error');
+              return;
+            }
+          } else {
+            showToast(signUpErr.message, 'error');
+            return;
+          }
+        }
+
+        // Direct sign in immediately without verification requirement
+        const { data: signInData, error: signInErr } = await state.supabase.auth.signInWithPassword({ email, password });
+        if (signInErr && !signUpData?.user) {
+          showToast(signInErr.message, 'error');
+          return;
+        }
+
+        const user = signInData?.user || signUpData?.user;
+        state.currentUser = {
+          id: user.id,
+          email: user.email,
+          username: name
+        };
+        localStorage.setItem('onecal_user_session', JSON.stringify(state.currentUser));
+        updateUserDisplay();
+        closeAuthModal();
+        fetchEventsFromSupabase();
+        showToast(`Welcome to OneCal, ${name}! 🎉`, 'success');
+        return;
+      } catch (err) {
+        showToast(err.message || 'Registration error', 'error');
+        return;
+      }
+    } else {
+      // Login
+      try {
+        const { data, error } = await state.supabase.auth.signInWithPassword({ email, password });
+        if (error) {
+          showToast(error.message, 'error');
+          return;
+        }
+        state.currentUser = {
+          id: data.user.id,
+          email: data.user.email,
+          username: data.user.user_metadata?.username || email.split('@')[0]
+        };
+        localStorage.setItem('onecal_user_session', JSON.stringify(state.currentUser));
+        updateUserDisplay();
+        closeAuthModal();
+        fetchEventsFromSupabase();
+        showToast(`Signed in as ${state.currentUser.username} ⭐`, 'success');
+        return;
+      } catch (err) {
+        showToast(err.message || 'Login error', 'error');
+        return;
+      }
+    }
+  } else {
+    // Offline local authentication fallback
+    state.currentUser = {
+      id: `usr_${Date.now()}`,
+      email,
+      username: name
+    };
+    localStorage.setItem('onecal_user_session', JSON.stringify(state.currentUser));
+    updateUserDisplay();
+    closeAuthModal();
+    renderAllViews();
+    showToast(`Logged in as ${name}!`, 'success');
+  }
+}
+
+async function handleSignOut() {
+  if (state.supabase) {
+    try {
+      await state.supabase.auth.signOut();
+    } catch (e) {}
+  }
+  localStorage.removeItem('onecal_user_session');
+  state.currentUser = null;
+  updateUserDisplay();
+  closeAuthModal();
+  renderAllViews();
+  showToast('Signed out successfully.', 'info');
+}
+
+async function handleUpdatePassword() {
+  const newPass = document.getElementById('input-change-password').value;
+  if (!newPass || newPass.length < 6) {
+    showToast('Password must be at least 6 characters.', 'error');
+    return;
+  }
+
+  if (state.supabase) {
+    try {
+      const { error } = await state.supabase.auth.updateUser({ password: newPass });
+      if (error) {
+        showToast(error.message, 'error');
+      } else {
+        document.getElementById('input-change-password').value = '';
+        showToast('Password updated successfully! 🔒', 'success');
+      }
+    } catch (err) {
+      showToast('Could not update password.', 'error');
+    }
+  } else {
+    showToast('Password updated locally.', 'success');
   }
 }
 
@@ -83,6 +322,15 @@ function getFYFromDate(d) {
 // ==========================================
 function getFilteredEvents() {
   return state.events.filter(evt => {
+    // Privacy & Multi-User Isolation:
+    // Shared events: visible to all users
+    // Private events: visible only to creator
+    if (evt.privacy === 'private') {
+      if (!state.currentUser || evt.user_id !== state.currentUser.id) {
+        return false;
+      }
+    }
+
     // 1. Fiscal Year (Oct 1 - Sep 30)
     if (state.filters.fy !== 'ALL') {
       const evtFy = evt.fiscal_year || getFYFromDate(new Date(evt.start_date));
@@ -114,7 +362,7 @@ function getFilteredEvents() {
       if (evt.event_type !== state.filters.type) return false;
     }
 
-    // 7. Privacy (Shared / Private)
+    // 7. Privacy filter
     if (state.filters.privacy !== 'ALL') {
       if (evt.privacy !== state.filters.privacy) return false;
     }
@@ -145,7 +393,6 @@ function clearAllFilters() {
 }
 
 function updateFilterUIState() {
-  // Update chips in the drawer
   const categories = ['vertical', 'fy', 'scope', 'mode', 'region', 'type', 'privacy'];
   let activeCount = 0;
 
@@ -402,7 +649,6 @@ function renderMonthCalendar(container, year, month, events) {
     const thisDate = new Date(year, month, day);
     const isToday = thisDate.toDateString() === today.toDateString();
     
-    // Find active events and preps for this date
     let dayPills = [];
     events.forEach(evt => {
       const heat = getPrepIntensityForDate(thisDate, evt);
@@ -428,7 +674,7 @@ function renderMonthCalendar(container, year, month, events) {
     </div>`;
   }
 
-  // Next month leading days to complete grid
+  // Next month leading days
   const remainingCells = 42 - (firstDay + totalDays);
   if (remainingCells > 0 && remainingCells < 7) {
     for (let day = 1; day <= remainingCells; day++) {
@@ -566,7 +812,6 @@ function renderPrepRadar() {
     }
   });
 
-  // Sort by crunch intensity (most critical first)
   radarItems.sort((a, b) => (b.heat.intensity === 'event' ? 5 : b.heat.intensity) - (a.heat.intensity === 'event' ? 5 : a.heat.intensity));
 
   if (radarItems.length === 0) {
@@ -627,7 +872,6 @@ function initOrRefreshMap() {
       scrollWheelZoom: true
     }).setView([35.0, 10.0], 2);
 
-    // 100% Free Open-Source OpenStreetMap & CartoDB Dark (No API Key Required)
     L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors &copy; CARTO',
       subdomains: 'abcd',
@@ -701,7 +945,7 @@ function renderGallery() {
 
   if (galleryItems.length === 0) {
     container.innerHTML = `<div class="col-span-full text-center py-16 bg-slate-900/50 rounded-2xl border border-slate-800 text-slate-500 font-semibold">
-      🖼️ No photos uploaded yet for the active filters. Open an event to upload media!
+      🖼️ No photos uploaded yet for the active filter. Open an event to upload media!
     </div>`;
     return;
   }
@@ -825,7 +1069,7 @@ function renderDiaryPreview() {
       </div>
       <div>
         <h3 class="font-serif text-2xl font-bold text-white">${escapeHtml(evt.name)}</h3>
-        <div class="text-xs text-slate-400 mt-1">📍 ${escapeHtml(evt.city_venue || evt.location_region)} • Format: ${escapeHtml(evt.mode)} • Allocated Prep: ${evt.prep_days} days</div>
+        <div class="text-xs text-slate-400 mt-1">📍 ${escapeHtml(evt.city_venue || evt.location_region)} • Format: ${escapeHtml(evt.mode)} • Allocated Prep: ${evt.prep_days} days • Created by: ${escapeHtml(evt.created_by_name || 'Team Member')}</div>
       </div>
       <p class="text-xs text-slate-300 leading-relaxed bg-slate-950 p-4 rounded-xl border border-slate-800/80">
         "${escapeHtml(evt.description || 'No overview notes.')}"
@@ -941,6 +1185,7 @@ function openEventModal(eventId) {
   document.getElementById('modal-event-date').textContent = `${formatDate(evt.start_date)} ${evt.end_date ? '– ' + formatDate(evt.end_date) : ''}`;
   document.getElementById('modal-event-location').textContent = `📍 ${evt.city_venue || evt.location_region}`;
   document.getElementById('modal-event-vertical').textContent = evt.vertical;
+  document.getElementById('modal-event-author').textContent = `Created by: ${evt.created_by_name || 'Team Member'}`;
   document.getElementById('modal-event-desc').textContent = evt.description || 'No strategic description provided.';
 
   // Preparation Banner
@@ -1038,7 +1283,7 @@ function submitNewComment() {
   if (!evt.comments) evt.comments = [];
   evt.comments.push({
     id: `c_${Date.now()}`,
-    user: state.currentUser ? (state.currentUser.username || state.currentUser.email) : 'Team Member',
+    user: state.currentUser ? (state.currentUser.username || state.currentUser.email.split('@')[0]) : 'Team Member',
     text: val,
     time: new Date().toISOString()
   });
@@ -1184,7 +1429,7 @@ function handleCreateEvent(e) {
   const newEvt = {
     id: `evt_${Date.now()}`,
     user_id: state.currentUser ? state.currentUser.id : 'demo-user-1',
-    created_by_name: state.currentUser ? (state.currentUser.username || state.currentUser.email) : 'Alastair Orchard',
+    created_by_name: state.currentUser ? (state.currentUser.username || state.currentUser.email.split('@')[0]) : 'Alastair Orchard',
     name,
     description: desc,
     start_date: startDateObj.toISOString(),
