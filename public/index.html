@@ -29,12 +29,6 @@
               600: '#7c3aed',
               700: '#6d28d9',
               900: '#4c1d95',
-            },
-            dark: {
-              bg: '#090b10',
-              card: '#111622',
-              cardHover: '#161c2c',
-              border: 'rgba(148, 163, 184, 0.14)',
             }
           }
         }
@@ -42,7 +36,7 @@
     }
   </script>
 
-  <!-- Leaflet CSS & JS -->
+  <!-- OpenStreetMap Leaflet CSS & JS (100% Free / Open Source, No API Key) -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
@@ -53,57 +47,27 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <!-- Custom Styles -->
-  <link rel="stylesheet" href="./styles.css?v=100">
+  <link rel="stylesheet" href="./styles.css?v=200">
 </head>
-<body class="bg-[#090b10] text-slate-100 min-h-screen flex flex-col font-sans selection:bg-purple-500/30">
+<body class="bg-[#090b10] text-slate-100 min-h-screen flex flex-col font-sans selection:bg-purple-500/30 overflow-x-hidden">
 
-  <!-- Header -->
-  <header class="sticky top-0 z-40 bg-[#0c1017]/90 backdrop-blur-xl border-b border-slate-800/80 px-4 lg:px-8 py-3">
-    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+  <!-- Header (Clean & Uncluttered) -->
+  <header class="sticky top-0 z-40 bg-[#0c1017]/95 backdrop-blur-xl border-b border-slate-800/80 px-4 lg:px-8 py-3">
+    <div class="max-w-7xl mx-auto flex items-center justify-between gap-4">
       
-      <!-- Brand & Global Filters -->
-      <div class="flex items-center gap-4 flex-wrap">
-        <div class="flex items-center gap-2 cursor-pointer" onclick="switchTab('calendar')">
-          <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-500 flex items-center justify-center text-white shadow-lg shadow-purple-600/30 font-black text-lg">
-            1
-          </div>
-          <div>
-            <span class="font-black text-xl tracking-tight text-white">One<span class="text-purple-400">Cal</span></span>
-            <span class="text-[10px] font-bold text-slate-400 block -mt-1 tracking-wider uppercase">Team & Prep Planner</span>
-          </div>
+      <!-- Brand Logo -->
+      <div class="flex items-center gap-3 cursor-pointer" onclick="switchTab('calendar')">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-500 flex items-center justify-center text-white shadow-lg shadow-purple-600/30 font-black text-lg">
+          1
         </div>
-
-        <div class="h-6 w-[1px] bg-slate-800 hidden md:block"></div>
-
-        <!-- FY Filter -->
-        <div class="flex items-center gap-1.5 bg-slate-900/90 border border-slate-800 rounded-xl px-2.5 py-1 text-xs">
-          <span class="text-slate-400 font-bold uppercase text-[10px]">FY:</span>
-          <select id="fy-filter" onchange="handleFyChange(this.value)" class="bg-transparent text-purple-300 font-bold focus:outline-none cursor-pointer">
-            <option value="FY26" selected class="bg-slate-900 text-white">FY26 (Active)</option>
-            <option value="FY25" class="bg-slate-900 text-white">FY25 (Archive)</option>
-            <option value="FY24" class="bg-slate-900 text-white">FY24 (Archive)</option>
-            <option value="ALL" class="bg-slate-900 text-white">All FYs</option>
-          </select>
-        </div>
-
-        <!-- Vertical Global Filter -->
-        <div class="flex items-center gap-1.5 bg-slate-900/90 border border-slate-800 rounded-xl px-2.5 py-1 text-xs">
-          <span class="text-slate-400 font-bold uppercase text-[10px]">Vertical:</span>
-          <select id="vertical-filter" onchange="handleVerticalChange(this.value)" class="bg-transparent text-indigo-300 font-bold focus:outline-none cursor-pointer">
-            <option value="ALL" selected class="bg-slate-900 text-white">All Verticals</option>
-            <option value="CPG" class="bg-slate-900 text-white">CPG</option>
-            <option value="Auto" class="bg-slate-900 text-white">Auto</option>
-            <option value="A&D" class="bg-slate-900 text-white">A&D</option>
-            <option value="Electronics" class="bg-slate-900 text-white">Electronics</option>
-            <option value="Life Sciences" class="bg-slate-900 text-white">Life Sciences</option>
-            <option value="Data Centers" class="bg-slate-900 text-white">Data Centers</option>
-            <option value="Cross Industry" class="bg-slate-900 text-white">Cross Industry</option>
-          </select>
+        <div>
+          <span class="font-black text-xl tracking-tight text-white">One<span class="text-purple-400">Cal</span></span>
+          <span class="text-[10px] font-bold text-slate-400 block -mt-1 tracking-wider uppercase">Executive Planner</span>
         </div>
       </div>
 
       <!-- Navigation Tabs -->
-      <nav class="flex items-center gap-1 overflow-x-auto scrollbar-none py-1">
+      <nav class="hidden md:flex items-center gap-1 bg-slate-900/80 border border-slate-800/80 p-1 rounded-2xl">
         <button onclick="switchTab('calendar')" id="tab-btn-calendar" class="tab-btn px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-purple-600/20 text-purple-300 border border-purple-500/30">
           <span>🗓️</span> Calendar
         </button>
@@ -124,8 +88,16 @@
         </button>
       </nav>
 
-      <!-- Action Buttons -->
-      <div class="flex items-center gap-2">
+      <!-- Action Buttons & Slide-over Filter Trigger -->
+      <div class="flex items-center gap-2.5">
+        
+        <!-- Animated Filter Panel Trigger -->
+        <button onclick="toggleFilterDrawer()" id="btn-filter-trigger" class="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-purple-500/50 text-xs font-bold text-slate-200 flex items-center gap-2 transition hover:bg-slate-800">
+          <span>⚡ Filters</span>
+          <span id="active-filter-badge" class="px-1.5 py-0.2 rounded-full text-[10px] font-black bg-purple-600 text-white hidden">0</span>
+        </button>
+
+        <!-- New Event Button -->
         <button onclick="openNewEventModal()" class="bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold px-3.5 py-1.5 rounded-xl shadow-lg shadow-purple-600/30 flex items-center gap-1.5 transition">
           <span class="text-sm leading-none">+</span> Event
         </button>
@@ -134,18 +106,182 @@
           ⚙️
         </button>
 
-        <!-- User profile pill -->
-        <div id="user-profile-btn" onclick="openAuthModal()" class="flex items-center gap-2 px-2.5 py-1 rounded-xl bg-slate-900/90 border border-slate-800 text-xs text-slate-300 cursor-pointer hover:border-slate-700 transition">
+        <!-- User Profile Pill -->
+        <div id="user-profile-btn" class="hidden sm:flex items-center gap-2 px-2.5 py-1 rounded-xl bg-slate-900/90 border border-slate-800 text-xs text-slate-300">
           <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-          <span id="user-display-name" class="font-semibold text-slate-200">Guest</span>
+          <span id="user-display-name" class="font-semibold text-slate-200">Alastair</span>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Mobile Nav Tabs Bar -->
+    <div class="flex md:hidden items-center gap-1 overflow-x-auto scrollbar-none pt-2.5 border-t border-slate-800/60 mt-2">
+      <button onclick="switchTab('calendar')" class="px-3 py-1 rounded-lg text-xs font-bold text-purple-300 bg-purple-900/40">Calendar</button>
+      <button onclick="switchTab('radar')" class="px-3 py-1 rounded-lg text-xs font-semibold text-slate-400">Radar</button>
+      <button onclick="switchTab('map')" class="px-3 py-1 rounded-lg text-xs font-semibold text-slate-400">Map</button>
+      <button onclick="switchTab('gallery')" class="px-3 py-1 rounded-lg text-xs font-semibold text-slate-400">Gallery</button>
+      <button onclick="switchTab('kpis')" class="px-3 py-1 rounded-lg text-xs font-semibold text-slate-400">KPIs</button>
+      <button onclick="switchTab('diary')" class="px-3 py-1 rounded-lg text-xs font-semibold text-slate-400">Diary</button>
+    </div>
+  </header>
+
+  <!-- SLIDE-OVER ANIMATED FILTER DRAWER -->
+  <div id="drawer-filter-backdrop" onclick="toggleFilterDrawer(false)" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300"></div>
+
+  <aside id="drawer-filter-panel" class="fixed top-0 right-0 z-50 h-full w-full max-w-md bg-[#111622] border-l border-slate-800 shadow-2xl flex flex-col transform translate-x-full transition-transform duration-300 ease-in-out">
+    
+    <!-- Drawer Header -->
+    <div class="p-5 border-b border-slate-800 flex items-center justify-between bg-slate-900/80">
+      <div class="flex items-center gap-2.5">
+        <span class="text-lg">⚡</span>
+        <div>
+          <h2 class="font-serif text-lg font-bold text-white">Event Filters</h2>
+          <span class="text-[11px] text-slate-400" id="filter-summary-subtitle">Select categories to narrow all views</span>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <button onclick="clearAllFilters()" class="text-xs text-purple-400 hover:text-purple-300 font-bold transition">
+          Reset All
+        </button>
+        <button onclick="toggleFilterDrawer(false)" class="p-1 rounded-lg text-slate-400 hover:text-white text-lg font-bold">
+          ✕
+        </button>
+      </div>
+    </div>
+
+    <!-- Drawer Filter Body -->
+    <div class="p-6 overflow-y-auto space-y-6 flex-1 text-xs">
+      
+      <!-- 1. Vertical Filter -->
+      <div class="space-y-2">
+        <label class="font-bold text-slate-300 uppercase tracking-wider text-[11px] flex items-center justify-between">
+          <span>Industry Vertical</span>
+          <span id="filter-tag-vertical" class="text-purple-400 font-normal">All</span>
+        </label>
+        <div class="flex flex-wrap gap-1.5" id="filter-chips-vertical">
+          <button onclick="setFilter('vertical', 'ALL')" class="filter-chip chip-active" data-val="ALL">All</button>
+          <button onclick="setFilter('vertical', 'CPG')" class="filter-chip" data-val="CPG">CPG</button>
+          <button onclick="setFilter('vertical', 'Auto')" class="filter-chip" data-val="Auto">Auto</button>
+          <button onclick="setFilter('vertical', 'A&D')" class="filter-chip" data-val="A&D">A&D</button>
+          <button onclick="setFilter('vertical', 'Electronics')" class="filter-chip" data-val="Electronics">Electronics</button>
+          <button onclick="setFilter('vertical', 'Life Sciences')" class="filter-chip" data-val="Life Sciences">Life Sciences</button>
+          <button onclick="setFilter('vertical', 'Data Centers')" class="filter-chip" data-val="Data Centers">Data Centers</button>
+          <button onclick="setFilter('vertical', 'Cross Industry')" class="filter-chip" data-val="Cross Industry">Cross Industry</button>
+        </div>
+      </div>
+
+      <!-- 2. Fiscal Year Filter (Oct 1 - Sep 30) -->
+      <div class="space-y-2">
+        <label class="font-bold text-slate-300 uppercase tracking-wider text-[11px] flex items-center justify-between">
+          <span>Fiscal Year (Oct 1 – Sep 30)</span>
+          <span id="filter-tag-fy" class="text-purple-400 font-normal">FY26 (Active)</span>
+        </label>
+        <div class="flex flex-wrap gap-1.5" id="filter-chips-fy">
+          <button onclick="setFilter('fy', 'FY26')" class="filter-chip chip-active" data-val="FY26">FY26 (Active)</button>
+          <button onclick="setFilter('fy', 'FY27')" class="filter-chip" data-val="FY27">FY27 (Future)</button>
+          <button onclick="setFilter('fy', 'FY25')" class="filter-chip" data-val="FY25">FY25 (Archive)</button>
+          <button onclick="setFilter('fy', 'FY24')" class="filter-chip" data-val="FY24">FY24</button>
+          <button onclick="setFilter('fy', 'ALL')" class="filter-chip" data-val="ALL">All FYs</button>
+        </div>
+      </div>
+
+      <!-- 3. Scope (Internal / External) -->
+      <div class="space-y-2">
+        <label class="font-bold text-slate-300 uppercase tracking-wider text-[11px] flex items-center justify-between">
+          <span>Audience Scope</span>
+          <span id="filter-tag-scope" class="text-purple-400 font-normal">All</span>
+        </label>
+        <div class="flex flex-wrap gap-1.5" id="filter-chips-scope">
+          <button onclick="setFilter('scope', 'ALL')" class="filter-chip chip-active" data-val="ALL">All</button>
+          <button onclick="setFilter('scope', 'External')" class="filter-chip" data-val="External">External</button>
+          <button onclick="setFilter('scope', 'Internal')" class="filter-chip" data-val="Internal">Internal</button>
+        </div>
+      </div>
+
+      <!-- 4. Format / Mode (Physical / Virtual) -->
+      <div class="space-y-2">
+        <label class="font-bold text-slate-300 uppercase tracking-wider text-[11px] flex items-center justify-between">
+          <span>Event Format</span>
+          <span id="filter-tag-mode" class="text-purple-400 font-normal">All</span>
+        </label>
+        <div class="flex flex-wrap gap-1.5" id="filter-chips-mode">
+          <button onclick="setFilter('mode', 'ALL')" class="filter-chip chip-active" data-val="ALL">All</button>
+          <button onclick="setFilter('mode', 'Physical')" class="filter-chip" data-val="Physical">Physical</button>
+          <button onclick="setFilter('mode', 'Virtual')" class="filter-chip" data-val="Virtual">Virtual</button>
+        </div>
+      </div>
+
+      <!-- 5. Region / Location -->
+      <div class="space-y-2">
+        <label class="font-bold text-slate-300 uppercase tracking-wider text-[11px] flex items-center justify-between">
+          <span>Location / Region</span>
+          <span id="filter-tag-region" class="text-purple-400 font-normal">All</span>
+        </label>
+        <div class="flex flex-wrap gap-1.5" id="filter-chips-region">
+          <button onclick="setFilter('region', 'ALL')" class="filter-chip chip-active" data-val="ALL">All</button>
+          <button onclick="setFilter('region', 'EMEA')" class="filter-chip" data-val="EMEA">EMEA</button>
+          <button onclick="setFilter('region', 'Germany')" class="filter-chip" data-val="Germany">Germany</button>
+          <button onclick="setFilter('region', 'Americas')" class="filter-chip" data-val="Americas">Americas</button>
+          <button onclick="setFilter('region', 'APAC')" class="filter-chip" data-val="APAC">APAC</button>
+          <button onclick="setFilter('region', 'Global')" class="filter-chip" data-val="Global">Global</button>
+        </div>
+      </div>
+
+      <!-- 6. Event Type -->
+      <div class="space-y-2">
+        <label class="font-bold text-slate-300 uppercase tracking-wider text-[11px] flex items-center justify-between">
+          <span>Event Type</span>
+          <span id="filter-tag-type" class="text-purple-400 font-normal">All</span>
+        </label>
+        <div class="flex flex-wrap gap-1.5" id="filter-chips-type">
+          <button onclick="setFilter('type', 'ALL')" class="filter-chip chip-active" data-val="ALL">All</button>
+          <button onclick="setFilter('type', 'Portfolio')" class="filter-chip" data-val="Portfolio">Portfolio</button>
+          <button onclick="setFilter('type', 'Fair')" class="filter-chip" data-val="Fair">Fair</button>
+          <button onclick="setFilter('type', 'Meeting')" class="filter-chip" data-val="Meeting">Meeting</button>
+          <button onclick="setFilter('type', 'Campaign')" class="filter-chip" data-val="Campaign">Campaign</button>
+        </div>
+      </div>
+
+      <!-- 7. Privacy -->
+      <div class="space-y-2">
+        <label class="font-bold text-slate-300 uppercase tracking-wider text-[11px] flex items-center justify-between">
+          <span>Privacy</span>
+          <span id="filter-tag-privacy" class="text-purple-400 font-normal">All</span>
+        </label>
+        <div class="flex flex-wrap gap-1.5" id="filter-chips-privacy">
+          <button onclick="setFilter('privacy', 'ALL')" class="filter-chip chip-active" data-val="ALL">All</button>
+          <button onclick="setFilter('privacy', 'shared')" class="filter-chip" data-val="shared">Shared</button>
+          <button onclick="setFilter('privacy', 'private')" class="filter-chip" data-val="private">Private</button>
         </div>
       </div>
 
     </div>
-  </header>
+
+    <!-- Drawer Footer -->
+    <div class="p-4 border-t border-slate-800 bg-slate-900/90 flex items-center justify-between">
+      <span class="text-xs text-slate-400" id="filter-results-count">Matching 10 events</span>
+      <button onclick="toggleFilterDrawer(false)" class="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-lg shadow-purple-600/30 transition">
+        Apply & Close
+      </button>
+    </div>
+
+  </aside>
 
   <!-- Main Container -->
   <main class="flex-1 max-w-7xl w-full mx-auto p-4 lg:p-8">
+
+    <!-- Active Filter Banner (if any filters active) -->
+    <div id="active-filter-strip" class="hidden mb-5 bg-purple-950/40 border border-purple-800/50 rounded-2xl px-4 py-2.5 items-center justify-between flex-wrap gap-2 text-xs">
+      <div class="flex items-center gap-2 flex-wrap text-purple-200">
+        <span class="font-bold">⚡ Active Filters:</span>
+        <div id="active-filter-tags-container" class="flex items-center gap-1.5 flex-wrap"></div>
+      </div>
+      <button onclick="clearAllFilters()" class="text-[11px] font-bold text-purple-400 hover:text-white underline">
+        Clear All
+      </button>
+    </div>
 
     <!-- VIEW 1: CALENDAR -->
     <section id="view-calendar" class="space-y-6">
@@ -208,7 +344,7 @@
             <p class="text-xs text-slate-400 mt-1">Real-time breakdown of events requiring active preparation today and this week with priority gradient.</p>
           </div>
           <div id="radar-today-date" class="px-4 py-1.5 bg-slate-900 border border-slate-800 rounded-xl text-xs font-bold text-purple-300">
-            Today: Sep 28, 2026
+            Today: Sep 29, 2026
           </div>
         </div>
 
@@ -218,7 +354,7 @@
       </div>
     </section>
 
-    <!-- VIEW 3: MAP VIEW -->
+    <!-- VIEW 3: MAP VIEW (OpenStreetMap Leaflet, 100% Free & Open Source) -->
     <section id="view-map" class="space-y-6 hidden">
       <div class="bg-[#111622] border border-slate-800/80 p-6 rounded-2xl shadow-xl space-y-4">
         <div class="flex items-center justify-between flex-wrap gap-4">
@@ -226,7 +362,7 @@
             <h2 class="font-serif text-2xl font-bold text-white flex items-center gap-2">
               🗺️ Regional Event Locations
             </h2>
-            <p class="text-xs text-slate-400 mt-1">Geographical distribution across EMEA, Germany, Americas, APAC, and Global hubs.</p>
+            <p class="text-xs text-slate-400 mt-1">Powered by OpenStreetMap (open-source, no API keys required).</p>
           </div>
           <div id="map-region-filter" class="flex gap-1 bg-slate-900 border border-slate-800 p-1 rounded-xl text-xs">
             <button onclick="filterMapRegion('ALL')" class="px-3 py-1 rounded-lg font-bold bg-purple-600 text-white">All</button>
@@ -264,7 +400,7 @@
         <div class="bg-[#111622] border border-slate-800 p-5 rounded-2xl">
           <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Events</span>
           <div id="kpi-total-events" class="text-3xl font-black text-white mt-1">0</div>
-          <span id="kpi-fy-label" class="text-[11px] text-purple-400 font-semibold">Active FY</span>
+          <span id="kpi-fy-label" class="text-[11px] text-purple-400 font-semibold">Active Filter</span>
         </div>
         <div class="bg-[#111622] border border-slate-800 p-5 rounded-2xl">
           <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Upcoming Events</span>
@@ -393,7 +529,7 @@
           </a>
         </div>
 
-        <!-- Photos Carousel / List -->
+        <!-- Photos -->
         <div id="modal-photos-container" class="space-y-2 hidden">
           <label class="text-xs font-bold text-slate-400 uppercase tracking-wider">Event Photos</label>
           <div id="modal-photos-grid" class="grid grid-cols-3 gap-2"></div>
@@ -588,7 +724,7 @@
         <label class="font-bold text-slate-300 uppercase tracking-wider text-[11px]">⚡ Supabase Cloud Sync</label>
         <p class="text-slate-400 text-[11px]">Connect to Supabase for multi-user real-time team calendar synchronization.</p>
         <input type="text" id="cfg-supabase-url" placeholder="https://xyz.supabase.co" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white">
-        <input type="password" id="cfg-supabase-key" placeholder="Supabase Anon / Publishable Key" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white">
+        <input type="***" id="cfg-supabase-key" placeholder="Supabase Anon / Publishable Key" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white">
         <button onclick="saveSupabaseConfig()" class="w-full py-2 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-xl transition">
           Connect Cloud Sync
         </button>
@@ -624,7 +760,7 @@
   </div>
 
   <!-- Scripts -->
-  <script src="./sample-data.js?v=100"></script>
-  <script src="./app.js?v=100"></script>
+  <script src="./sample-data.js?v=200"></script>
+  <script src="./app.js?v=200"></script>
 </body>
 </html>

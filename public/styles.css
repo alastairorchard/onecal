@@ -25,6 +25,30 @@ body {
   background: #334155;
 }
 
+/* Filter Chips */
+.filter-chip {
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  background: #161c2c;
+  border: 1px solid #1e293b;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.filter-chip:hover {
+  background: #1e293b;
+  color: #ffffff;
+  border-color: #334155;
+}
+.filter-chip.chip-active {
+  background: #7c3aed !important;
+  color: #ffffff !important;
+  border-color: #9333ea !important;
+  box-shadow: 0 2px 10px rgba(124, 58, 237, 0.35);
+}
+
 /* Preparation Intensity Classes */
 .prep-intensity-1 {
   background: rgba(59, 130, 246, 0.15) !important;
@@ -79,7 +103,7 @@ body {
   background: rgba(147, 51, 234, 0.06);
 }
 
-/* Leaflet Dark Customization */
+/* OpenStreetMap Leaflet Container */
 .leaflet-container {
   background: #090b10 !important;
   font-family: inherit !important;
@@ -117,7 +141,7 @@ body {
     background: #ffffff !important;
     color: #0f172a !important;
   }
-  header, nav, button, #toast, .no-print {
+  header, nav, button, #toast, #drawer-filter-panel, #drawer-filter-backdrop, .no-print {
     display: none !important;
   }
   .diary-page-entry {

@@ -1,15 +1,22 @@
 // OneCal - Core Application Logic & Preparation Heatmap Engine
 
 // ==========================================
-// STATE MANAGEMENT
+// STATE MANAGEMENT & MULTI-DIMENSIONAL FILTERS
 // ==========================================
 const state = {
   events: [],
-  selectedVertical: 'ALL',
-  selectedFY: 'FY26',
+  filters: {
+    vertical: 'ALL',
+    fy: 'FY26',
+    scope: 'ALL',
+    mode: 'ALL',
+    region: 'ALL',
+    type: 'ALL',
+    privacy: 'ALL'
+  },
   activeTab: 'calendar',
   calendarMode: 'month',
-  currentDate: new Date(2026, 8, 28), // Default anchor to current context (Sep 28, 2026)
+  currentDate: new Date(2026, 8, 29), // Sep 29, 2026 (FY26 active horizon)
   activeEventId: null,
   currentUser: { id: 'demo-user-1', email: 'alastair@orchard.it', username: 'Alastair Orchard' },
   supabase: null,
@@ -29,11 +36,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   loadLocalOrSampleData();
   initSupabaseIfConfigured();
   updateUserDisplay();
+  updateFilterUIState();
   renderAllViews();
 });
 
 function loadLocalOrSampleData() {
-  const saved = localStorage.getItem('onecal_events_data');
+  const saved = localStorage.getItem('onecal_events_data_v2');
   if (saved) {
     try {
       state.events = JSON.parse(saved);
@@ -47,7 +55,7 @@ function loadLocalOrSampleData() {
 }
 
 function saveLocalData() {
-  localStorage.setItem('onecal_events_data', JSON.stringify(state.events));
+  localStorage.setItem('onecal_events_data_v2', JSON.stringify(state.events));
 }
 
 function updateUserDisplay() {
@@ -58,40 +66,175 @@ function updateUserDisplay() {
 }
 
 // ==========================================
-// FILTERING (VERTICAL & FISCAL YEAR)
+// FISCAL YEAR (OCT 1 – SEP 30) ENGINE
+// ==========================================
+function getFYFromDate(d) {
+  if (!d || isNaN(d.getTime())) return 'FY26';
+  const y = d.getFullYear();
+  const m = d.getMonth(); // 0 = Jan, 8 = Sep, 9 = Oct, 11 = Dec
+  // If October 1 or later (m >= 9), FY is (year + 1)
+  // If Jan .. Sep (m < 9), FY is (year)
+  const fyNum = m >= 9 ? y + 1 : y;
+  return `FY${String(fyNum).slice(-2)}`;
+}
+
+// ==========================================
+// MULTI-DIMENSIONAL FILTERING ENGINE
 // ==========================================
 function getFilteredEvents() {
   return state.events.filter(evt => {
-    // FY Filter
-    if (state.selectedFY !== 'ALL') {
+    // 1. Fiscal Year (Oct 1 - Sep 30)
+    if (state.filters.fy !== 'ALL') {
       const evtFy = evt.fiscal_year || getFYFromDate(new Date(evt.start_date));
-      if (evtFy !== state.selectedFY) return false;
+      if (evtFy !== state.filters.fy) return false;
     }
-    // Vertical Filter
-    if (state.selectedVertical !== 'ALL') {
-      if (evt.vertical !== state.selectedVertical) return false;
+
+    // 2. Industry Vertical
+    if (state.filters.vertical !== 'ALL') {
+      if (evt.vertical !== state.filters.vertical) return false;
     }
+
+    // 3. Audience Scope (Internal / External)
+    if (state.filters.scope !== 'ALL') {
+      if (evt.scope !== state.filters.scope) return false;
+    }
+
+    // 4. Format (Physical / Virtual)
+    if (state.filters.mode !== 'ALL') {
+      if (evt.mode !== state.filters.mode) return false;
+    }
+
+    // 5. Region / Location
+    if (state.filters.region !== 'ALL') {
+      if (evt.location_region !== state.filters.region) return false;
+    }
+
+    // 6. Event Type (Portfolio, Fair, Meeting, Campaign)
+    if (state.filters.type !== 'ALL') {
+      if (evt.event_type !== state.filters.type) return false;
+    }
+
+    // 7. Privacy (Shared / Private)
+    if (state.filters.privacy !== 'ALL') {
+      if (evt.privacy !== state.filters.privacy) return false;
+    }
+
     return true;
   });
 }
 
-function getFYFromDate(d) {
-  const yr = d.getFullYear() % 100;
-  // Fiscal year standard: Oct 1 - Sep 30
-  const m = d.getMonth();
-  return m >= 9 ? `FY${yr + 1}` : `FY${yr}`;
-}
-
-function handleVerticalChange(val) {
-  state.selectedVertical = val;
+function setFilter(cat, val) {
+  state.filters[cat] = val;
+  updateFilterUIState();
   renderAllViews();
 }
 
-function handleFyChange(val) {
-  state.selectedFY = val;
-  const kpiFy = document.getElementById('kpi-fy-label');
-  if (kpiFy) kpiFy.textContent = val === 'ALL' ? 'All Fiscal Years' : `${val} Horizon`;
+function clearAllFilters() {
+  state.filters = {
+    vertical: 'ALL',
+    fy: 'ALL',
+    scope: 'ALL',
+    mode: 'ALL',
+    region: 'ALL',
+    type: 'ALL',
+    privacy: 'ALL'
+  };
+  updateFilterUIState();
   renderAllViews();
+  showToast('All filters cleared.', 'info');
+}
+
+function updateFilterUIState() {
+  // Update chips in the drawer
+  const categories = ['vertical', 'fy', 'scope', 'mode', 'region', 'type', 'privacy'];
+  let activeCount = 0;
+
+  categories.forEach(cat => {
+    const val = state.filters[cat];
+    const container = document.getElementById(`filter-chips-${cat}`);
+    const tagLabel = document.getElementById(`filter-tag-${cat}`);
+
+    if (tagLabel) tagLabel.textContent = val === 'ALL' ? 'All' : val;
+
+    if (container) {
+      const chips = container.querySelectorAll('.filter-chip');
+      chips.forEach(btn => {
+        const btnVal = btn.getAttribute('data-val');
+        if (btnVal === val) {
+          btn.classList.add('chip-active');
+        } else {
+          btn.classList.remove('chip-active');
+        }
+      });
+    }
+
+    if (val !== 'ALL') {
+      activeCount++;
+    }
+  });
+
+  // Update Header Button Badge
+  const badge = document.getElementById('active-filter-badge');
+  if (badge) {
+    if (activeCount > 0) {
+      badge.textContent = activeCount;
+      badge.classList.remove('hidden');
+    } else {
+      badge.classList.add('hidden');
+    }
+  }
+
+  // Update Active Filter Strip
+  const strip = document.getElementById('active-filter-strip');
+  const tagsContainer = document.getElementById('active-filter-tags-container');
+  const resultsCount = document.getElementById('filter-results-count');
+
+  const filtered = getFilteredEvents();
+  if (resultsCount) resultsCount.textContent = `Matching ${filtered.length} events`;
+
+  if (strip && tagsContainer) {
+    if (activeCount > 0) {
+      strip.classList.remove('hidden');
+      strip.classList.add('flex');
+
+      let tagsHtml = '';
+      categories.forEach(cat => {
+        if (state.filters[cat] !== 'ALL') {
+          tagsHtml += `<span class="px-2 py-0.5 rounded-full bg-purple-900/60 border border-purple-600/50 text-[11px] font-bold flex items-center gap-1">
+            ${cat.toUpperCase()}: ${state.filters[cat]}
+            <button onclick="setFilter('${cat}', 'ALL')" class="hover:text-rose-300 ml-0.5 font-black">×</button>
+          </span>`;
+        }
+      });
+      tagsContainer.innerHTML = tagsHtml;
+    } else {
+      strip.classList.add('hidden');
+      strip.classList.remove('flex');
+    }
+  }
+}
+
+// ==========================================
+// ANIMATED SLIDE-OVER FILTER DRAWER
+// ==========================================
+function toggleFilterDrawer(open) {
+  const panel = document.getElementById('drawer-filter-panel');
+  const backdrop = document.getElementById('drawer-filter-backdrop');
+  if (!panel || !backdrop) return;
+
+  const shouldOpen = open !== undefined ? open : panel.classList.contains('translate-x-full');
+
+  if (shouldOpen) {
+    backdrop.classList.remove('opacity-0', 'pointer-events-none');
+    backdrop.classList.add('opacity-100', 'pointer-events-auto');
+    panel.classList.remove('translate-x-full');
+    panel.classList.add('translate-x-0');
+  } else {
+    backdrop.classList.remove('opacity-100', 'pointer-events-auto');
+    backdrop.classList.add('opacity-0', 'pointer-events-none');
+    panel.classList.remove('translate-x-0');
+    panel.classList.add('translate-x-full');
+  }
 }
 
 // ==========================================
@@ -197,7 +340,7 @@ function navigateCalendar(delta) {
 }
 
 function goToToday() {
-  state.currentDate = new Date(2026, 8, 28);
+  state.currentDate = new Date(2026, 8, 29);
   renderCalendar();
 }
 
@@ -264,14 +407,11 @@ function renderMonthCalendar(container, year, month, events) {
     events.forEach(evt => {
       const heat = getPrepIntensityForDate(thisDate, evt);
       if (heat.active) {
-        dayPills.push({
-          event: evt,
-          heat: heat
-        });
+        dayPills.push({ event: evt, heat });
       }
     });
 
-    html += `<div class="cal-day-cell p-2 rounded-xl flex flex-col justify-between cursor-pointer ${isToday ? 'cal-day-today' : ''}" onclick="openDayDetailModal('${thisDate.toISOString()}')">
+    html += `<div class="cal-day-cell p-2 rounded-xl flex flex-col justify-between cursor-pointer ${isToday ? 'cal-day-today' : ''}">
       <div class="flex items-center justify-between mb-1">
         <span class="text-xs font-bold ${isToday ? 'text-purple-400' : 'text-slate-300'}">${day}</span>
         ${dayPills.length > 0 ? `<span class="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-slate-800 text-slate-400">${dayPills.length}</span>` : ''}
@@ -475,16 +615,21 @@ function renderPrepRadar() {
 }
 
 // ==========================================
-// INTERACTIVE MAP VIEW (LEAFLET)
+// INTERACTIVE MAP VIEW (OPENSTREETMAP LEAFLET - 100% OPEN SOURCE)
 // ==========================================
 function initOrRefreshMap() {
   const mapContainer = document.getElementById('events-map');
   if (!mapContainer) return;
 
   if (!state.map) {
-    state.map = L.map('events-map').setView([35.0, 10.0], 2);
+    state.map = L.map('events-map', {
+      zoomControl: true,
+      scrollWheelZoom: true
+    }).setView([35.0, 10.0], 2);
+
+    // 100% Free Open-Source OpenStreetMap & CartoDB Dark (No API Key Required)
     L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      attribution: '&copy; OpenStreetMap &copy; CARTO',
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors &copy; CARTO',
       subdomains: 'abcd',
       maxZoom: 19
     }).addTo(state.map);
@@ -556,7 +701,7 @@ function renderGallery() {
 
   if (galleryItems.length === 0) {
     container.innerHTML = `<div class="col-span-full text-center py-16 bg-slate-900/50 rounded-2xl border border-slate-800 text-slate-500 font-semibold">
-      🖼️ No photos uploaded yet for this filter. Open an event to upload media!
+      🖼️ No photos uploaded yet for the active filters. Open an event to upload media!
     </div>`;
     return;
   }
@@ -668,7 +813,7 @@ function renderDiaryPreview() {
   const sortedEvents = [...getFilteredEvents()].sort((a, b) => new Date(a.start_date) - new Date(b.start_date));
 
   if (sortedEvents.length === 0) {
-    container.innerHTML = `<div class="text-center py-16 text-slate-500 font-semibold">No events to display in diary.</div>`;
+    container.innerHTML = `<div class="text-center py-16 text-slate-500 font-semibold">No events matching the active filter criteria.</div>`;
     return;
   }
 
@@ -700,7 +845,7 @@ function exportOneCalDiaryPDF() {
 
   const userLabel = state.currentUser ? (state.currentUser.username || state.currentUser.email) : 'OneCal Team';
   const total = sortedEvents.length;
-  const fyLabel = state.selectedFY;
+  const fyLabel = state.filters.fy === 'ALL' ? 'All Fiscal Years' : state.filters.fy;
 
   const entriesHtml = sortedEvents.map((evt, idx) => {
     let photosMarkup = '';
@@ -1034,13 +1179,15 @@ function handleCreateEvent(e) {
   const url = document.getElementById('form-evt-url').value;
   const desc = document.getElementById('form-evt-desc').value;
 
+  const startDateObj = new Date(start);
+
   const newEvt = {
     id: `evt_${Date.now()}`,
     user_id: state.currentUser ? state.currentUser.id : 'demo-user-1',
     created_by_name: state.currentUser ? (state.currentUser.username || state.currentUser.email) : 'Alastair Orchard',
     name,
     description: desc,
-    start_date: new Date(start).toISOString(),
+    start_date: startDateObj.toISOString(),
     end_date: end ? new Date(end).toISOString() : null,
     privacy,
     scope,
@@ -1057,7 +1204,7 @@ function handleCreateEvent(e) {
     photos: [],
     audio_notes: [],
     comments: [],
-    fiscal_year: getFYFromDate(new Date(start))
+    fiscal_year: getFYFromDate(startDateObj)
   };
 
   state.events.push(newEvt);
@@ -1065,6 +1212,7 @@ function handleCreateEvent(e) {
   syncEventToSupabase(newEvt);
   closeCreateEventModal();
   renderAllViews();
+  updateFilterUIState();
   showToast('Event created successfully!', 'success');
 }
 
@@ -1076,6 +1224,7 @@ function deleteCurrentEvent() {
   saveLocalData();
   closeEventModal();
   renderAllViews();
+  updateFilterUIState();
   showToast('Event deleted.', 'info');
 }
 
@@ -1104,6 +1253,7 @@ async function fetchEventsFromSupabase() {
       state.events = data;
       saveLocalData();
       renderAllViews();
+      updateFilterUIState();
     }
   } catch (err) {
     console.warn('Could not fetch from Supabase:', err);
@@ -1169,6 +1319,7 @@ function importDataJSON(e) {
         state.events = imported;
         saveLocalData();
         renderAllViews();
+        updateFilterUIState();
         closeSettingsModal();
         showToast(`Imported ${imported.length} events successfully!`, 'success');
       }
@@ -1184,6 +1335,7 @@ function resetToSampleData() {
     state.events = window.ONECAL_SAMPLE_EVENTS || [];
     saveLocalData();
     renderAllViews();
+    updateFilterUIState();
     closeSettingsModal();
     showToast('Example dataset reloaded.', 'info');
   }
