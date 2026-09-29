@@ -46,7 +46,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <!-- Custom Styles -->
-  <link rel="stylesheet" href="./styles.css?v=450">
+  <link rel="stylesheet" href="./styles.css?v=500">
 </head>
 <body class="bg-[#090b10] text-slate-100 min-h-screen flex flex-col font-sans selection:bg-purple-500/30 overflow-x-hidden">
 
@@ -131,6 +131,9 @@
           <button onclick="switchTab('calendar')" id="tab-btn-calendar" class="tab-btn px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-purple-600/20 text-purple-300 border border-purple-500/30">
             <span>🗓️</span> Calendar
           </button>
+          <button onclick="switchTab('events')" id="tab-btn-events" class="tab-btn px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 text-slate-400 hover:text-slate-200">
+            <span>📋</span> Events
+          </button>
           <button onclick="switchTab('radar')" id="tab-btn-radar" class="tab-btn px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 text-slate-400 hover:text-slate-200">
             <span>⚡</span> Prep Radar
           </button>
@@ -181,6 +184,7 @@
       <!-- Mobile Nav Tabs Bar -->
       <div class="flex md:hidden items-center gap-1 overflow-x-auto scrollbar-none pt-2.5 border-t border-slate-800/60 mt-2">
         <button onclick="switchTab('calendar')" class="px-3 py-1 rounded-lg text-xs font-bold text-purple-300 bg-purple-900/40">Calendar</button>
+        <button onclick="switchTab('events')" class="px-3 py-1 rounded-lg text-xs font-semibold text-slate-400">Events</button>
         <button onclick="switchTab('radar')" class="px-3 py-1 rounded-lg text-xs font-semibold text-slate-400">Radar</button>
         <button onclick="switchTab('map')" class="px-3 py-1 rounded-lg text-xs font-semibold text-slate-400">Map</button>
         <button onclick="switchTab('gallery')" class="px-3 py-1 rounded-lg text-xs font-semibold text-slate-400">Gallery</button>
@@ -333,7 +337,7 @@
     <!-- Main Container -->
     <main class="flex-1 max-w-7xl w-full mx-auto p-4 lg:p-8">
 
-      <!-- Active Filter Banner (if any filters active) -->
+      <!-- Active Filter Banner -->
       <div id="active-filter-strip" class="hidden mb-5 bg-purple-950/40 border border-purple-800/50 rounded-2xl px-4 py-2.5 items-center justify-between flex-wrap gap-2 text-xs">
         <div class="flex items-center gap-2 flex-wrap text-purple-200">
           <span class="font-bold">⚡ Active Filters:</span>
@@ -347,8 +351,9 @@
       <!-- VIEW 1: CALENDAR -->
       <section id="view-calendar" class="space-y-6">
         
-        <!-- Calendar Controls -->
+        <!-- Calendar Controls & Prep Toggle -->
         <div class="flex flex-wrap items-center justify-between gap-4 bg-[#111622] border border-slate-800/80 p-4 rounded-2xl shadow-xl">
+          
           <div class="flex items-center gap-3">
             <button onclick="navigateCalendar(-1)" class="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 transition">
               ‹ Prev
@@ -364,17 +369,28 @@
             </h2>
           </div>
 
-          <!-- View Mode (Day, Week, Month, Year) -->
-          <div class="flex items-center bg-slate-900 border border-slate-800 rounded-xl p-1 gap-1">
-            <button onclick="setCalendarMode('day')" id="cal-mode-day" class="px-3 py-1 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition">Day</button>
-            <button onclick="setCalendarMode('week')" id="cal-mode-week" class="px-3 py-1 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition">Week</button>
-            <button onclick="setCalendarMode('month')" id="cal-mode-month" class="px-3 py-1 rounded-lg text-xs font-bold bg-purple-600 text-white shadow transition">Month</button>
-            <button onclick="setCalendarMode('year')" id="cal-mode-year" class="px-3 py-1 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition">Year</button>
+          <div class="flex items-center flex-wrap gap-3">
+            <!-- Toggle Preparation Heatmap Visibility -->
+            <div class="flex items-center gap-2 bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-xl text-xs">
+              <label class="flex items-center gap-2 cursor-pointer font-bold text-slate-300 select-none">
+                <input type="checkbox" id="toggle-show-prep" checked onchange="handleTogglePrep(this.checked)" class="w-4 h-4 rounded text-purple-600 bg-slate-800 border-slate-700 focus:ring-purple-500 cursor-pointer accent-purple-600">
+                <span id="label-show-prep">Show Preparation</span>
+              </label>
+            </div>
+
+            <!-- View Mode (Day, Week, Month, Year) -->
+            <div class="flex items-center bg-slate-900 border border-slate-800 rounded-xl p-1 gap-1">
+              <button onclick="setCalendarMode('day')" id="cal-mode-day" class="px-3 py-1 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition">Day</button>
+              <button onclick="setCalendarMode('week')" id="cal-mode-week" class="px-3 py-1 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition">Week</button>
+              <button onclick="setCalendarMode('month')" id="cal-mode-month" class="px-3 py-1 rounded-lg text-xs font-bold bg-purple-600 text-white shadow transition">Month</button>
+              <button onclick="setCalendarMode('year')" id="cal-mode-year" class="px-3 py-1 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition">Year</button>
+            </div>
           </div>
+
         </div>
 
         <!-- Prep Intensity Legend -->
-        <div class="flex items-center justify-between flex-wrap gap-2 text-xs text-slate-400 px-1">
+        <div id="calendar-prep-legend" class="flex items-center justify-between flex-wrap gap-2 text-xs text-slate-400 px-1">
           <div class="flex items-center gap-4 flex-wrap">
             <span class="font-bold text-slate-300">Preparation Heatmap:</span>
             <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-blue-500/40 border border-blue-400/60 inline-block"></span> Initial (T-20d+)</span>
@@ -394,7 +410,34 @@
         </div>
       </section>
 
-      <!-- VIEW 2: PREPARATION RADAR -->
+      <!-- VIEW 2: EVENTS LIST (STRUCTURED TABLE & CARDS LIKE AL) -->
+      <section id="view-events" class="space-y-6 hidden">
+        <div class="bg-[#111622] border border-slate-800/80 p-6 rounded-2xl shadow-xl space-y-4">
+          
+          <div class="flex items-center justify-between flex-wrap gap-4 border-b border-slate-800 pb-4">
+            <div>
+              <h2 class="text-2xl font-black text-white flex items-center gap-2">
+                📋 All Calendar Events
+              </h2>
+              <p class="text-xs text-slate-400 mt-1">Complete chronological directory of strategic events, fairs, meetings, and campaigns.</p>
+            </div>
+            
+            <div class="flex items-center gap-3">
+              <input type="text" id="events-search-input" oninput="handleEventsSearch(this.value)" placeholder="Search events, venues, notes..." class="bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-500 w-64">
+              <button onclick="openNewEventModal()" class="bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold px-3.5 py-1.5 rounded-xl shadow-lg shadow-purple-600/30 flex items-center gap-1.5 transition">
+                + New Event
+              </button>
+            </div>
+          </div>
+
+          <div id="events-list-container" class="space-y-3">
+            <!-- Rendered via app.js -->
+          </div>
+
+        </div>
+      </section>
+
+      <!-- VIEW 3: PREPARATION RADAR -->
       <section id="view-radar" class="space-y-6 hidden">
         <div class="bg-[#111622] border border-slate-800/80 p-6 rounded-2xl shadow-xl">
           <div class="flex items-center justify-between flex-wrap gap-4 border-b border-slate-800 pb-4 mb-6">
@@ -419,7 +462,7 @@
         </div>
       </section>
 
-      <!-- VIEW 3: MAP VIEW (OpenStreetMap Leaflet, 100% Free & Open Source) -->
+      <!-- VIEW 4: MAP VIEW (OpenStreetMap Leaflet, 100% Free & Open Source) -->
       <section id="view-map" class="space-y-6 hidden">
         <div class="bg-[#111622] border border-slate-800/80 p-6 rounded-2xl shadow-xl space-y-4">
           <div class="flex items-center justify-between flex-wrap gap-4">
@@ -442,7 +485,7 @@
         </div>
       </section>
 
-      <!-- VIEW 4: GALLERY -->
+      <!-- VIEW 5: GALLERY -->
       <section id="view-gallery" class="space-y-6 hidden">
         <div class="bg-[#111622] border border-slate-800/80 p-6 rounded-2xl shadow-xl">
           <div class="border-b border-slate-800 pb-4 mb-6">
@@ -458,9 +501,8 @@
         </div>
       </section>
 
-      <!-- VIEW 5: KPIS & ANALYTICS -->
+      <!-- VIEW 6: KPIS & ANALYTICS -->
       <section id="view-kpis" class="space-y-6 hidden">
-        <!-- Top Metrics Cards -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div class="bg-[#111622] border border-slate-800 p-5 rounded-2xl">
             <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Events</span>
@@ -484,7 +526,6 @@
           </div>
         </div>
 
-        <!-- Charts Row -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div class="bg-[#111622] border border-slate-800 p-6 rounded-2xl shadow-xl">
             <h3 class="text-sm font-bold text-slate-200 mb-4 flex items-center justify-between">
@@ -508,7 +549,7 @@
         </div>
       </section>
 
-      <!-- VIEW 6: EXECUTIVE DIARY -->
+      <!-- VIEW 7: EXECUTIVE DIARY -->
       <section id="view-diary" class="space-y-6 hidden">
         <div class="bg-[#111622] border border-slate-800/80 p-6 rounded-2xl shadow-xl">
           <div class="flex items-center justify-between flex-wrap gap-4 border-b border-slate-800 pb-4 mb-6">
@@ -555,7 +596,7 @@
       <!-- Change Password -->
       <div class="space-y-2 pt-2 border-t border-slate-800">
         <label class="block text-slate-300 font-bold">Change Password</label>
-        <input type="password" id="input-change-password" placeholder="New *** (min 6 chars)" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white">
+        <input type="password" id="input-change-password" placeholder="New password (min 6 chars)" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white">
         <button onclick="handleUpdatePassword()" class="w-full py-2 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-xl transition">
           Update Password
         </button>
@@ -582,7 +623,12 @@
             Shared
           </span>
         </div>
-        <button onclick="closeEventModal()" class="text-slate-400 hover:text-white text-lg font-bold p-1">✕</button>
+        <div class="flex items-center gap-2">
+          <button onclick="editCurrentEventFromModal()" class="px-3 py-1 rounded-xl bg-slate-800 hover:bg-purple-600 hover:text-white border border-slate-700 text-slate-200 text-xs font-bold transition flex items-center gap-1.5">
+            ✏️ Edit
+          </button>
+          <button onclick="closeEventModal()" class="text-slate-400 hover:text-white text-lg font-bold p-1">✕</button>
+        </div>
       </div>
 
       <!-- Modal Body -->
@@ -684,6 +730,9 @@
           🗑️ Delete Event
         </button>
         <div class="flex gap-2">
+          <button onclick="editCurrentEventFromModal()" class="px-4 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-xs font-bold text-white transition">
+            ✏️ Edit Event
+          </button>
           <button onclick="closeEventModal()" class="px-4 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-300 transition">
             Close
           </button>
@@ -697,7 +746,7 @@
   <div id="modal-create-event" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden items-center justify-center p-4">
     <div class="bg-[#111622] border border-slate-700 w-full max-w-xl rounded-3xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-fade-in">
       <div class="p-5 border-b border-slate-800 flex items-center justify-between bg-slate-900/60">
-        <h2 class="text-lg font-black text-white">New Calendar Event</h2>
+        <h2 id="modal-create-event-title" class="text-lg font-black text-white">New Calendar Event</h2>
         <button onclick="closeCreateEventModal()" class="text-slate-400 hover:text-white text-lg font-bold p-1">✕</button>
       </div>
 
@@ -854,7 +903,7 @@
         </button>
       </div>
 
-      <!-- SUPER-USER DANGER ZONE (alastair.orchard@siemens.com & alastair@orchard.it) -->
+      <!-- SUPER-USER DANGER ZONE -->
       <div id="superuser-danger-zone" class="space-y-3 pt-4 border-t border-rose-900/60 hidden">
         <div class="p-4 rounded-2xl bg-rose-950/40 border border-rose-800/80 space-y-2">
           <div class="flex items-center gap-2 text-rose-400 font-black uppercase text-[11px] tracking-wider">
@@ -879,7 +928,7 @@
   </div>
 
   <!-- Scripts -->
-  <script src="./sample-data.js?v=450"></script>
-  <script src="./app.js?v=450"></script>
+  <script src="./sample-data.js?v=500"></script>
+  <script src="./app.js?v=500"></script>
 </body>
 </html>

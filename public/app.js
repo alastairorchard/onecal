@@ -1,4 +1,4 @@
-// OneCal - Core Application Logic, Mandatory Login Gate, Multi-User Auth & Prep Heatmap
+// OneCal - Core Application Logic, Events List, In-Place Editing, Prep Toggle & Multi-User Auth
 
 // ==========================================
 // STATE MANAGEMENT
@@ -14,11 +14,14 @@ const state = {
     type: 'ALL',
     privacy: 'ALL'
   },
+  showPrep: true,
+  searchQuery: '',
   gateAuthMode: 'login', // 'login' | 'register'
   activeTab: 'calendar',
   calendarMode: 'month',
   currentDate: new Date(2026, 9, 1), // Oct 1, 2026 (FY27 kickoff)
   activeEventId: null,
+  editingEventId: null,
   currentUser: null,
   supabase: null,
   map: null,
@@ -47,7 +50,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 function loadLocalOrSampleData() {
-  const saved = localStorage.getItem('onecal_events_data_v3');
+  const saved = localStorage.getItem('onecal_events_data_v4');
   if (saved) {
     try {
       state.events = JSON.parse(saved);
@@ -61,7 +64,7 @@ function loadLocalOrSampleData() {
 }
 
 function saveLocalData() {
-  localStorage.setItem('onecal_events_data_v3', JSON.stringify(state.events));
+  localStorage.setItem('onecal_events_data_v4', JSON.stringify(state.events));
 }
 
 // ==========================================
@@ -284,11 +287,11 @@ async function handleUpdatePassword() {
       if (error) {
         showToast(error.message, 'error');
       } else {
-        document.getElementById('input-change-***').value = '';
+        document.getElementById('input-change-password').value = '';
         showToast('Password updated successfully! 🔒', 'success');
       }
     } catch (err) {
-      showToast('Could not update ***.', 'error');
+      showToast('Could not update password.', 'error');
     }
   } else {
     showToast('Password updated locally.', 'success');
@@ -359,6 +362,16 @@ function getFilteredEvents() {
       }
     }
 
+    // Search query filter (if active)
+    if (state.searchQuery) {
+      const q = state.searchQuery.toLowerCase();
+      const match = (evt.name || '').toLowerCase().includes(q) ||
+                    (evt.description || '').toLowerCase().includes(q) ||
+                    (evt.city_venue || '').toLowerCase().includes(q) ||
+                    (evt.vertical || '').toLowerCase().includes(q);
+      if (!match) return false;
+    }
+
     // 1. Fiscal Year (Oct 1 - Sep 30)
     if (state.filters.fy !== 'ALL') {
       const evtFy = evt.fiscal_year || getFYFromDate(new Date(evt.start_date));
@@ -415,6 +428,10 @@ function clearAllFilters() {
     type: 'ALL',
     privacy: 'ALL'
   };
+  state.searchQuery = '';
+  const searchInput = document.getElementById('events-search-input');
+  if (searchInput) searchInput.value = '';
+
   updateFilterUIState();
   renderAllViews();
   showToast('All filters cleared.', 'info');
@@ -517,7 +534,7 @@ function toggleFilterDrawer(open) {
 // ==========================================
 function switchTab(tabId) {
   state.activeTab = tabId;
-  const tabs = ['calendar', 'radar', 'map', 'gallery', 'kpis', 'diary'];
+  const tabs = ['calendar', 'events', 'radar', 'map', 'gallery', 'kpis', 'diary'];
 
   tabs.forEach(t => {
     const sec = document.getElementById(`view-${t}`);
@@ -533,6 +550,7 @@ function switchTab(tabId) {
   });
 
   if (tabId === 'calendar') renderCalendar();
+  if (tabId === 'events') renderEventsList();
   if (tabId === 'radar') renderPrepRadar();
   if (tabId === 'map') initOrRefreshMap();
   if (tabId === 'gallery') renderGallery();
@@ -542,11 +560,25 @@ function switchTab(tabId) {
 
 function renderAllViews() {
   if (state.activeTab === 'calendar') renderCalendar();
+  if (state.activeTab === 'events') renderEventsList();
   if (state.activeTab === 'radar') renderPrepRadar();
   if (state.activeTab === 'map') initOrRefreshMap();
   if (state.activeTab === 'gallery') renderGallery();
   if (state.activeTab === 'kpis') renderKPIs();
   if (state.activeTab === 'diary') renderDiaryPreview();
+}
+
+// ==========================================
+// PREPARATION TOGGLE
+// ==========================================
+function handleTogglePrep(show) {
+  state.showPrep = show;
+  const legend = document.getElementById('calendar-prep-legend');
+  if (legend) {
+    legend.style.display = show ? 'flex' : 'none';
+  }
+  renderCalendar();
+  showToast(show ? 'Preparation heatmap visible 🔥' : 'Preparation hidden (Events only 🗓️)', 'info');
 }
 
 // ==========================================
@@ -681,7 +713,10 @@ function renderMonthCalendar(container, year, month, events) {
     events.forEach(evt => {
       const heat = getPrepIntensityForDate(thisDate, evt);
       if (heat.active) {
-        dayPills.push({ event: evt, heat });
+        // If showPrep is false, only show actual event day (purple pill)
+        if (state.showPrep || heat.intensity === 'event') {
+          dayPills.push({ event: evt, heat });
+        }
       }
     });
 
@@ -729,7 +764,9 @@ function renderWeekCalendar(container, currDate, events) {
     events.forEach(evt => {
       const heat = getPrepIntensityForDate(day, evt);
       if (heat.active) {
-        dayEvents.push({ event: evt, heat });
+        if (state.showPrep || heat.intensity === 'event') {
+          dayEvents.push({ event: evt, heat });
+        }
       }
     });
 
@@ -748,7 +785,7 @@ function renderWeekCalendar(container, currDate, events) {
             </div>
           </div>
         `).join('')}
-        ${dayEvents.length === 0 ? '<div class="text-[11px] text-slate-600 text-center py-6">No prep / event</div>' : ''}
+        ${dayEvents.length === 0 ? '<div class="text-[11px] text-slate-600 text-center py-6">No events</div>' : ''}
       </div>
     </div>`;
   }
@@ -761,7 +798,9 @@ function renderDayCalendar(container, currDate, events) {
   events.forEach(evt => {
     const heat = getPrepIntensityForDate(currDate, evt);
     if (heat.active) {
-      activeEvents.push({ event: evt, heat });
+      if (state.showPrep || heat.intensity === 'event') {
+        activeEvents.push({ event: evt, heat });
+      }
     }
   });
 
@@ -769,7 +808,7 @@ function renderDayCalendar(container, currDate, events) {
     <div class="text-center pb-4 border-b border-slate-800">
       <div class="text-xs font-black text-purple-400 uppercase tracking-widest">Daily Preparation & Agenda</div>
       <h3 class="text-2xl font-black text-white mt-1">${currDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</h3>
-      <p class="text-xs text-slate-400 mt-1">${activeEvents.length} items requiring team action or event presence.</p>
+      <p class="text-xs text-slate-400 mt-1">${activeEvents.length} items on schedule.</p>
     </div>
     <div class="space-y-3">
       ${activeEvents.map(p => `
@@ -782,12 +821,13 @@ function renderDayCalendar(container, currDate, events) {
             <h4 class="text-lg font-black text-white mt-1">${escapeHtml(p.event.name)}</h4>
             <p class="text-xs opacity-90 line-clamp-1 mt-0.5">${escapeHtml(p.event.description)}</p>
           </div>
-          <div class="text-right">
+          <div class="text-right flex items-center gap-2">
             <span class="px-3 py-1 rounded-xl text-xs font-black bg-slate-900/90 text-white border border-slate-700">${p.heat.label}</span>
+            <button onclick="event.stopPropagation(); editEvent('${p.event.id}')" class="p-2 rounded-xl bg-slate-800 hover:bg-purple-600 text-white text-xs font-bold transition">✏️</button>
           </div>
         </div>
       `).join('')}
-      ${activeEvents.length === 0 ? '<div class="text-center py-16 text-slate-500 font-semibold">No active preparation windows or events scheduled for this day.</div>' : ''}
+      ${activeEvents.length === 0 ? '<div class="text-center py-16 text-slate-500 font-semibold">No active events scheduled for this day.</div>' : ''}
     </div>
   </div>`;
   container.innerHTML = html;
@@ -806,8 +846,9 @@ function renderYearCalendar(container, year, events) {
       </div>
       <div class="space-y-1.5 max-h-44 overflow-y-auto">
         ${monthEvents.map(e => `
-          <div onclick="openEventModal('${e.id}')" class="text-[11px] font-semibold p-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-200 truncate cursor-pointer transition">
-            🗓️ ${escapeHtml(e.name)}
+          <div onclick="openEventModal('${e.id}')" class="text-[11px] font-semibold p-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-200 truncate cursor-pointer transition flex items-center justify-between">
+            <span class="truncate">🗓️ ${escapeHtml(e.name)}</span>
+            <button onclick="event.stopPropagation(); editEvent('${e.id}')" class="opacity-0 hover:opacity-100 text-[10px] ml-1">✏️</button>
           </div>
         `).join('')}
         ${monthEvents.length === 0 ? '<div class="text-[10px] text-slate-600 text-center py-4">No events</div>' : ''}
@@ -817,6 +858,82 @@ function renderYearCalendar(container, year, events) {
 
   html += `</div>`;
   container.innerHTML = html;
+}
+
+// ==========================================
+// EVENTS LIST VIEW (TABLE & CARDS LIKE AL)
+// ==========================================
+function handleEventsSearch(query) {
+  state.searchQuery = query;
+  renderEventsList();
+}
+
+function renderEventsList() {
+  const container = document.getElementById('events-list-container');
+  if (!container) return;
+
+  const events = getFilteredEvents();
+  // Sort chronological
+  events.sort((a, b) => new Date(a.start_date) - new Date(b.start_date));
+
+  if (events.length === 0) {
+    container.innerHTML = `<div class="text-center py-16 bg-slate-900/40 rounded-2xl border border-slate-800 text-slate-500 font-semibold">
+      📋 No events found matching your active filters.
+    </div>`;
+    return;
+  }
+
+  container.innerHTML = events.map(evt => {
+    const photosCount = (evt.photos || []).length;
+    const commentsCount = (evt.comments || []).length;
+    const isOwner = state.currentUser && (evt.user_id === state.currentUser.id || isSuperUser(state.currentUser.email));
+
+    return `
+      <div class="bg-slate-900/90 border border-slate-800 hover:border-purple-500/40 p-4 rounded-2xl transition flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-lg group">
+        
+        <div class="flex items-start gap-3.5 flex-1 min-w-0">
+          <div class="w-12 h-12 rounded-xl bg-purple-900/40 border border-purple-700/50 flex flex-col items-center justify-center text-purple-300 font-black text-xs shrink-0">
+            <span>${new Date(evt.start_date).toLocaleDateString('en-US', { month: 'short' }).toUpperCase()}</span>
+            <span class="text-sm font-extrabold text-white">${new Date(evt.start_date).getDate()}</span>
+          </div>
+
+          <div class="space-y-1 min-w-0 flex-1">
+            <div class="flex items-center gap-2 flex-wrap text-[11px]">
+              <span class="px-2 py-0.5 rounded-full font-black uppercase bg-purple-900/60 text-purple-300 border border-purple-700/60">${escapeHtml(evt.vertical)}</span>
+              <span class="px-2 py-0.5 rounded-full font-bold bg-slate-800 text-slate-300">${escapeHtml(evt.event_type)}</span>
+              <span class="text-slate-400 font-semibold">${evt.mode === 'Virtual' ? '💻 Virtual' : '📍 ' + escapeHtml(evt.city_venue || evt.location_region)}</span>
+              <span class="text-slate-500">•</span>
+              <span class="text-slate-400 font-semibold">Prep: ${evt.prep_days}d</span>
+              ${evt.privacy === 'private' ? '<span class="text-rose-400 font-bold">🔒 Private</span>' : ''}
+            </div>
+
+            <h3 onclick="openEventModal('${evt.id}')" class="text-base font-black text-white hover:text-purple-300 cursor-pointer transition truncate">
+              ${escapeHtml(evt.name)}
+            </h3>
+
+            <p class="text-xs text-slate-400 line-clamp-1">
+              ${escapeHtml(evt.description || 'No strategic overview provided.')}
+            </p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2 w-full md:w-auto justify-end shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-slate-800">
+          <button onclick="openEventModal('${evt.id}')" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition flex items-center gap-1">
+            <span>🔍</span> Details
+          </button>
+          <button onclick="editEvent('${evt.id}')" class="px-3 py-1.5 rounded-xl bg-purple-600/30 hover:bg-purple-600 text-purple-200 hover:text-white border border-purple-500/40 text-xs font-bold transition flex items-center gap-1">
+            <span>✏️</span> Edit
+          </button>
+          ${isOwner ? `
+            <button onclick="deleteEventById('${evt.id}')" class="p-1.5 rounded-xl bg-slate-800 hover:bg-rose-900/60 text-rose-400 text-xs font-bold transition" title="Delete Event">
+              🗑️
+            </button>
+          ` : ''}
+        </div>
+
+      </div>
+    `;
+  }).join('');
 }
 
 // ==========================================
@@ -896,7 +1013,10 @@ function renderPrepRadar() {
 
         <div class="pt-4 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
           <span>Allocated Prep: <strong>${evt.prep_days} days</strong></span>
-          <span class="font-bold text-purple-400 hover:text-purple-300">View Event & Notes ›</span>
+          <div class="flex items-center gap-2">
+            <button onclick="event.stopPropagation(); editEvent('${evt.id}')" class="text-purple-400 hover:text-white font-bold">✏️ Edit</button>
+            <span class="font-bold text-purple-400 hover:text-purple-300">View ›</span>
+          </div>
         </div>
       </div>
     `;
@@ -923,7 +1043,6 @@ function initOrRefreshMap() {
     }).addTo(state.map);
   }
 
-  // Clear existing markers
   state.markers.forEach(m => state.map.removeLayer(m));
   state.markers = [];
 
@@ -944,9 +1063,14 @@ function initOrRefreshMap() {
         <div style="font-size:10px; font-weight:800; text-transform:uppercase; color:#6d28d9;">${escapeHtml(evt.vertical)}</div>
         <div style="font-size:14px; font-weight:800; margin:3px 0; color:#0f172a;">${escapeHtml(evt.name)}</div>
         <div style="font-size:11px; color:#475569; margin-bottom:8px;">📍 ${escapeHtml(evt.city_venue || evt.location_region)}</div>
-        <button onclick="openEventModal('${evt.id}')" style="background:#7c3aed; color:#fff; font-size:11px; font-weight:800; border:none; padding:5px 10px; border-radius:6px; cursor:pointer; width:100%;">
-          Open Event Details
-        </button>
+        <div style="display:flex; gap:4px;">
+          <button onclick="openEventModal('${evt.id}')" style="background:#7c3aed; color:#fff; font-size:11px; font-weight:800; border:none; padding:5px 8px; border-radius:6px; cursor:pointer; flex:1;">
+            Details
+          </button>
+          <button onclick="editEvent('${evt.id}')" style="background:#334155; color:#fff; font-size:11px; font-weight:800; border:none; padding:5px 8px; border-radius:6px; cursor:pointer;">
+            ✏️
+          </button>
+        </div>
       </div>
     `;
     marker.bindPopup(popupHtml);
@@ -996,8 +1120,11 @@ function renderGallery() {
 
   container.innerHTML = galleryItems.map(item => `
     <div onclick="openEventModal('${item.event.id}')" class="bg-slate-900 border border-slate-800 hover:border-purple-500/50 rounded-2xl overflow-hidden shadow-xl cursor-pointer transition hover:scale-[1.02] group">
-      <div class="h-56 overflow-hidden bg-slate-950">
+      <div class="h-56 overflow-hidden bg-slate-950 relative">
         <img src="${escapeHtml(item.photo)}" alt="${escapeHtml(item.event.name)}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
+        <button onclick="event.stopPropagation(); editEvent('${item.event.id}')" class="absolute top-3 right-3 p-2 rounded-xl bg-slate-900/80 hover:bg-purple-600 text-white text-xs font-bold transition shadow-lg">
+          ✏️
+        </button>
       </div>
       <div class="p-4 space-y-1">
         <div class="flex items-center justify-between text-[11px]">
@@ -1109,7 +1236,10 @@ function renderDiaryPreview() {
     <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
       <div class="flex items-center justify-between border-b border-slate-800 pb-3">
         <span class="text-xs font-black text-purple-400 uppercase tracking-wider">#${idx + 1} — ${formatDate(evt.start_date)}</span>
-        <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-800 text-indigo-300 border border-slate-700">${escapeHtml(evt.vertical)}</span>
+        <div class="flex items-center gap-2">
+          <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-800 text-indigo-300 border border-slate-700">${escapeHtml(evt.vertical)}</span>
+          <button onclick="editEvent('${evt.id}')" class="text-xs text-purple-400 hover:text-white font-bold">✏️ Edit</button>
+        </div>
       </div>
       <div>
         <h3 class="text-2xl font-black text-white">${escapeHtml(evt.name)}</h3>
@@ -1290,6 +1420,13 @@ function closeEventModal() {
   state.activeEventId = null;
 }
 
+function editCurrentEventFromModal() {
+  if (!state.activeEventId) return;
+  const evtId = state.activeEventId;
+  closeEventModal();
+  editEvent(evtId);
+}
+
 function renderModalComments(evt) {
   const listEl = document.getElementById('modal-comments-list');
   const countEl = document.getElementById('modal-comments-count');
@@ -1427,19 +1564,64 @@ function handlePhotoUpload(e) {
 }
 
 // ==========================================
-// CREATE & DELETE EVENTS
+// CREATE & EDIT EVENT MODAL LOGIC
 // ==========================================
 function openNewEventModal() {
+  state.editingEventId = null;
   const modal = document.getElementById('modal-create-event');
-  if (modal) {
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
-    const startInput = document.getElementById('form-evt-start');
-    if (startInput) {
-      const now = new Date();
-      startInput.value = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
-    }
+  const title = document.getElementById('modal-create-event-title');
+  if (!modal) return;
+
+  if (title) title.textContent = 'New Calendar Event';
+  document.getElementById('form-create-event').reset();
+
+  const startInput = document.getElementById('form-evt-start');
+  if (startInput) {
+    const now = new Date();
+    startInput.value = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
   }
+
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+}
+
+function editEvent(eventId) {
+  const evt = state.events.find(e => e.id === eventId);
+  if (!evt) return;
+
+  state.editingEventId = eventId;
+  const modal = document.getElementById('modal-create-event');
+  const title = document.getElementById('modal-create-event-title');
+  if (!modal) return;
+
+  if (title) title.textContent = '✏️ Edit Calendar Event';
+
+  document.getElementById('form-evt-name').value = evt.name || '';
+  
+  if (evt.start_date) {
+    const sDate = new Date(evt.start_date);
+    document.getElementById('form-evt-start').value = new Date(sDate.getTime() - (sDate.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+  }
+  if (evt.end_date) {
+    const eDate = new Date(evt.end_date);
+    document.getElementById('form-evt-end').value = new Date(eDate.getTime() - (eDate.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+  } else {
+    document.getElementById('form-evt-end').value = '';
+  }
+
+  document.getElementById('form-evt-type').value = evt.event_type || 'Fair';
+  document.getElementById('form-evt-vertical').value = evt.vertical || 'Cross Industry';
+  document.getElementById('form-evt-scope').value = evt.scope || 'External';
+  document.getElementById('form-evt-mode').value = evt.mode || 'Physical';
+  document.getElementById('form-evt-privacy').value = evt.privacy || 'shared';
+  document.getElementById('form-evt-region').value = evt.location_region || 'EMEA';
+  document.getElementById('form-evt-prep').value = evt.prep_days || 7;
+  document.getElementById('form-evt-venue').value = evt.city_venue || '';
+  document.getElementById('form-evt-url').value = evt.url || '';
+  document.getElementById('form-evt-desc').value = evt.description || '';
+
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
 }
 
 function closeCreateEventModal() {
@@ -1448,6 +1630,7 @@ function closeCreateEventModal() {
     modal.classList.add('hidden');
     modal.classList.remove('flex');
   }
+  state.editingEventId = null;
 }
 
 function handleCreateEvent(e) {
@@ -1469,48 +1652,89 @@ function handleCreateEvent(e) {
 
   const startDateObj = new Date(start);
 
-  const newEvt = {
-    id: `evt_${Date.now()}`,
-    user_id: state.currentUser ? state.currentUser.id : 'usr_default',
-    created_by_name: state.currentUser ? (state.currentUser.username || state.currentUser.email.split('@')[0]) : 'Alastair Orchard',
-    name,
-    description: desc,
-    start_date: startDateObj.toISOString(),
-    end_date: end ? new Date(end).toISOString() : null,
-    privacy,
-    scope,
-    mode,
-    location_region: region,
-    city_venue: venue,
-    lat: getApproxLatForRegion(region),
-    lng: getApproxLngForRegion(region),
-    event_type: type,
-    vertical,
-    prep_days: prepDays,
-    url,
-    url_thumbnail: url ? 'https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=600&q=80' : null,
-    photos: [],
-    audio_notes: [],
-    comments: [],
-    fiscal_year: getFYFromDate(startDateObj)
-  };
+  if (state.editingEventId) {
+    // Update existing event
+    const existing = state.events.find(ev => ev.id === state.editingEventId);
+    if (existing) {
+      existing.name = name;
+      existing.description = desc;
+      existing.start_date = startDateObj.toISOString();
+      existing.end_date = end ? new Date(end).toISOString() : null;
+      existing.privacy = privacy;
+      existing.scope = scope;
+      existing.mode = mode;
+      existing.location_region = region;
+      existing.city_venue = venue;
+      existing.lat = getApproxLatForRegion(region);
+      existing.lng = getApproxLngForRegion(region);
+      existing.event_type = type;
+      existing.vertical = vertical;
+      existing.prep_days = prepDays;
+      existing.url = url;
+      if (url && !existing.url_thumbnail) {
+        existing.url_thumbnail = 'https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=600&q=80';
+      }
+      existing.fiscal_year = getFYFromDate(startDateObj);
+      
+      saveLocalData();
+      syncEventToSupabase(existing);
+      showToast('Event updated successfully! ✏️', 'success');
+    }
+  } else {
+    // Create new event
+    const newEvt = {
+      id: `evt_${Date.now()}`,
+      user_id: state.currentUser ? state.currentUser.id : 'usr_default',
+      created_by_name: state.currentUser ? (state.currentUser.username || state.currentUser.email.split('@')[0]) : 'Alastair Orchard',
+      name,
+      description: desc,
+      start_date: startDateObj.toISOString(),
+      end_date: end ? new Date(end).toISOString() : null,
+      privacy,
+      scope,
+      mode,
+      location_region: region,
+      city_venue: venue,
+      lat: getApproxLatForRegion(region),
+      lng: getApproxLngForRegion(region),
+      event_type: type,
+      vertical,
+      prep_days: prepDays,
+      url,
+      url_thumbnail: url ? 'https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=600&q=80' : null,
+      photos: [],
+      audio_notes: [],
+      comments: [],
+      fiscal_year: getFYFromDate(startDateObj)
+    };
 
-  state.events.push(newEvt);
-  saveLocalData();
-  syncEventToSupabase(newEvt);
+    state.events.push(newEvt);
+    saveLocalData();
+    syncEventToSupabase(newEvt);
+    showToast('Event created successfully! 🎉', 'success');
+  }
+
   closeCreateEventModal();
   renderAllViews();
   updateFilterUIState();
-  showToast('Event created successfully!', 'success');
 }
 
 function deleteCurrentEvent() {
   if (!state.activeEventId) return;
+  deleteEventById(state.activeEventId);
+  closeEventModal();
+}
+
+function deleteEventById(eventId) {
   if (!confirm('Are you sure you want to delete this event?')) return;
 
-  state.events = state.events.filter(e => e.id !== state.activeEventId);
+  state.events = state.events.filter(e => e.id !== eventId);
   saveLocalData();
-  closeEventModal();
+  
+  if (state.supabase) {
+    state.supabase.from('onecal_events').delete().eq('id', eventId).then(() => {});
+  }
+
   renderAllViews();
   updateFilterUIState();
   showToast('Event deleted.', 'info');
