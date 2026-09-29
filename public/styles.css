@@ -103,10 +103,13 @@ body {
   background: rgba(147, 51, 234, 0.06);
 }
 
-/* OpenStreetMap Leaflet Container */
+/* OpenStreetMap Leaflet Dark Mode Tiles */
 .leaflet-container {
   background: #090b10 !important;
   font-family: inherit !important;
+}
+.osm-dark-tiles {
+  filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7);
 }
 .leaflet-popup-content-wrapper {
   background: #111622 !important;

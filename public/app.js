@@ -872,10 +872,11 @@ function initOrRefreshMap() {
       scrollWheelZoom: true
     }).setView([35.0, 10.0], 2);
 
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors &copy; CARTO',
-      subdomains: 'abcd',
-      maxZoom: 19
+    // Pure 100% OpenStreetMap Foundation Tiles (Zero API Key, Zero Third-Party Vendors)
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors',
+      maxZoom: 19,
+      className: 'osm-dark-tiles'
     }).addTo(state.map);
   }
 
