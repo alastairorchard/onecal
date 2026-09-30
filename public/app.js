@@ -1761,7 +1761,7 @@ function deleteEventById(eventId) {
 // SUPABASE SYNC & DATA BACKUPS
 // ==========================================
 function initSupabaseIfConfigured() {
-  const url = localStorage.getItem('onecal_sb_url') || 'https://bfwlzobdpbuippfbbjud.supabase.co';
+  const url = localStorage.getItem('onecal_sb_url') || 'https://acqohfmmhytrxppuzuzt.supabase.co';
   const key = localStorage.getItem('onecal_sb_key') || 'sb_publishable_PcDpOFZptvEbE0wL8qDyLA_uqqkkf0A';
 
   if (url && key && window.supabase) {
@@ -1801,7 +1801,7 @@ async function syncEventToSupabase(evt) {
 function openSettingsModal() {
   const modal = document.getElementById('modal-settings');
   if (modal) {
-    document.getElementById('cfg-supabase-url').value = localStorage.getItem('onecal_sb_url') || 'https://bfwlzobdpbuippfbbjud.supabase.co';
+    document.getElementById('cfg-supabase-url').value = localStorage.getItem('onecal_sb_url') || 'https://acqohfmmhytrxppuzuzt.supabase.co';
     document.getElementById('cfg-supabase-key').value = localStorage.getItem('onecal_sb_key') || 'sb_publishable_PcDpOFZptvEbE0wL8qDyLA_uqqkkf0A';
     
     // Super-User check for Danger Zone button
